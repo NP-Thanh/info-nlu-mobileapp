@@ -15,10 +15,10 @@ class AuthRepository {
 
     // Lưu token vào SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', data['token']);
-    await prefs.setString('studentCode', data['studentCode']);
-    await prefs.setString('fullName', data['fullName']);
-    await prefs.setString('role', data['role']);
+    await prefs.setString('token', data['token'] ?? '');
+    await prefs.setString('studentCode', data['studentCode'] ?? '');
+    await prefs.setString('fullName', data['fullName'] ?? '');
+    await prefs.setString('role', data['role'] ?? '');
 
     return data;
   }
