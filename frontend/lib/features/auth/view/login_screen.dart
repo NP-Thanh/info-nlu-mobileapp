@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../providers/login_provider.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -253,7 +254,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildForgotPassword() {
     return TextButton(
-      onPressed: () {},
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+        );
+      },
       child: const Text(
         'Quên mật khẩu?',
         style: TextStyle(

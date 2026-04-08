@@ -1,9 +1,10 @@
 package com.example.nlu.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "students")
@@ -15,12 +16,32 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String studentId;
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "student_code", unique = true, nullable = false)
+    private String studentCode;
 
+    @Column(name = "full_name")
     private String fullName;
-    private String email;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    private String gender;
+    private String phone;
+    private String cccd;
+    private String ethnicity;
+
+    @Column(name = "place_of_birth")
+    private String placeOfBirth;
+
+    @Column(name = "start_year")
+    private Integer startYear;
+
+    @Column(name = "end_year")
+    private Integer endYear;
+
+    private String status;
 }

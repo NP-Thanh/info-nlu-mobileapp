@@ -2,18 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../data/auth_repository.dart';
 
-// State cho login
 class LoginState {
   final bool isLoading;
   final String? errorMessage;
   final bool isSuccess;
   final bool obscurePassword;
+  final String? fullName;
 
   const LoginState({
     this.isLoading = false,
     this.errorMessage,
     this.isSuccess = false,
     this.obscurePassword = true,
+    this.fullName,
   });
 
   LoginState copyWith({
@@ -21,6 +22,7 @@ class LoginState {
     String? errorMessage,
     bool? isSuccess,
     bool? obscurePassword,
+    String? fullName,
     bool clearError = false,
   }) {
     return LoginState(
@@ -28,6 +30,7 @@ class LoginState {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isSuccess: isSuccess ?? this.isSuccess,
       obscurePassword: obscurePassword ?? this.obscurePassword,
+      fullName: fullName ?? this.fullName,
     );
   }
 }
@@ -42,7 +45,6 @@ class LoginNotifier extends StateNotifier<LoginState> {
   }
 
   Future<void> login(String studentId, String password) async {
-    // Validate studentId: chỉ chứa số
     if (studentId.isEmpty) {
       state = state.copyWith(errorMessage: 'Vui lòng nhập mã số sinh viên');
       return;
@@ -52,16 +54,18 @@ class LoginNotifier extends StateNotifier<LoginState> {
       return;
     }
     if (!RegExp(r'^\d+$').hasMatch(studentId)) {
-      state = state.copyWith(
-        errorMessage: 'Mã số sinh viên chỉ được chứa chữ số',
-      );
+      state = state.copyWith(errorMessage: 'Mã số sinh viên chỉ được chứa chữ số');
       return;
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _repo.login(studentId, password);
-      state = state.copyWith(isLoading: false, isSuccess: true);
+      final data = await _repo.login(studentId, password);
+      state = state.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        fullName: data['fullName'] as String?,
+      );
     } on DioException catch (e) {
       final msg = e.response?.data?['message'] ?? 'Sai mã số sinh viên hoặc mật khẩu';
       state = state.copyWith(isLoading: false, errorMessage: msg);
