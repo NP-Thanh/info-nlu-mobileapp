@@ -17,20 +17,18 @@ public class Schedule {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "course_id")
-    private Course course;
+    @JoinColumn(name = "enrollment_id")
+    private Enrollment enrollment;
 
     private String room;
     private String lecturer;
 
+    /** 2=Thứ 2, 3=Thứ 3, 4=Thứ 4, 5=Thứ 5, 6=Thứ 6, 7=Thứ 7, 8=Chủ nhật */
     @Column(name = "day_of_week")
     private Integer dayOfWeek;
 
+    /**
+     * Ca học: 1=07:00-09:15, 2=09:30-11:45, 3=12:30-14:45, 4=15:00-17:15
+     */
     private Integer period;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
 }

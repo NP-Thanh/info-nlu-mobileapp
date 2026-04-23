@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../student/view/student_info_screen.dart';
+import '../../schedule/view/schedule_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -11,29 +12,53 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
-  static const _screens = [
-    StudentInfoScreen(),
-    _PlaceholderScreen(icon: Icons.calendar_today_outlined, label: 'Thời khóa biểu'),
-    _PlaceholderScreen(icon: Icons.settings_outlined, label: 'Cài đặt'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentIndex) return;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // swipe controlled by tabs only
+        onPageChanged: (i) => setState(() => _currentIndex = i),
+        children: const [
+          StudentInfoScreen(),
+          ScheduleScreen(),
+          _SettingsPlaceholder(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: _onTabTapped,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
         backgroundColor: Colors.white,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        selectedLabelStyle:
+            const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
           BottomNavigationBarItem(
@@ -57,22 +82,21 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-class _PlaceholderScreen extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _PlaceholderScreen({required this.icon, required this.label});
+class _SettingsPlaceholder extends StatelessWidget {
+  const _SettingsPlaceholder();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: AppColors.textSecondary),
-            const SizedBox(height: 12),
-            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+            Icon(Icons.settings_outlined, size: 48, color: AppColors.textSecondary),
+            SizedBox(height: 12),
+            Text('Cài đặt',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
           ],
         ),
       ),

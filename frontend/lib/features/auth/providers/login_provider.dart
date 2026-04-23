@@ -67,7 +67,17 @@ class LoginNotifier extends StateNotifier<LoginState> {
         fullName: data['fullName'] as String?,
       );
     } on DioException catch (e) {
-      final msg = e.response?.data?['message'] ?? 'Sai mã số sinh viên hoặc mật khẩu';
+      String msg;
+
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        msg = 'Không thể kết nối tới server';
+      } else if (e.response != null) {
+        msg = e.response?.data?['message'] ?? 'Lỗi server';
+      } else {
+        msg = 'Có lỗi xảy ra';
+      }
+
       state = state.copyWith(isLoading: false, errorMessage: msg);
     } catch (_) {
       state = state.copyWith(
