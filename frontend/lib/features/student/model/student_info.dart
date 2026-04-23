@@ -10,7 +10,7 @@ class StudentInfo {
   final String? idCard;
   final String? email;
 
-  // Hành chính
+  // Thông tin lý lịch
   final String? birthPlace;
   final String? ethnicity;
   final String? religion;
@@ -18,6 +18,7 @@ class StudentInfo {
 
   // Thông tin khóa học
   final String? major;
+  final String? specialization;
   final String? classCode;
   final String? faculty;
   final String? academicYear;
@@ -37,6 +38,7 @@ class StudentInfo {
     this.religion,
     this.nationality,
     this.major,
+    this.specialization,
     this.classCode,
     this.faculty,
     this.academicYear,
@@ -58,6 +60,7 @@ class StudentInfo {
       religion: json['religion'],
       nationality: json['nationality'],
       major: json['major'],
+      specialization: json['specialization'],
       classCode: json['classCode'],
       faculty: json['faculty'],
       academicYear: json['academicYear'],

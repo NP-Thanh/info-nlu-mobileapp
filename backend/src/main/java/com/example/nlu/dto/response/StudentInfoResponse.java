@@ -26,6 +26,7 @@ public class StudentInfoResponse {
 
     // Thông tin khóa học
     private String major;
+    private String specialization;
     private String classCode;
     private String faculty;
     private String academicYear;

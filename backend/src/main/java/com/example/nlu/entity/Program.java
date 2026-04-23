@@ -14,10 +14,9 @@ public class Program {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String faculty;
-    private String department;
-    private String major;
-    private String specialization;
+    private String faculty; //khoa
+    private String major; //ngành
+    private String specialization; //chuyên ngành
 
     @Column(name = "education_type")
     private String educationType;

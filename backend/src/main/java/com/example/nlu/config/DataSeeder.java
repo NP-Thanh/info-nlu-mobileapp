@@ -32,10 +32,9 @@ public class DataSeeder implements CommandLineRunner {
         // 1. Tạo Program
         Program program = new Program();
         program.setFaculty("Công nghệ thông tin");
-        program.setDepartment("Công nghệ thông tin");
         program.setMajor("Công nghệ thông tin");
         program.setSpecialization("Công nghệ thông tin");
-        program.setEducationType("Đại học chính quy");
+        program.setEducationType("Đại học");
         programRepository.save(program);
 
         // 2. Tạo User
@@ -56,8 +55,10 @@ public class DataSeeder implements CommandLineRunner {
         student.setDateOfBirth(LocalDate.of(2004, 11, 2));
         student.setGender("Nam");
         student.setPhone("0826661039");
-        student.setCccd("0792040*****");
+        student.setCccd("0123456789");
         student.setEthnicity("Kinh");
+        student.setReligion("Không");
+        student.setNationality("Việt Nam");
         student.setPlaceOfBirth("TP. Hồ Chí Minh");
         student.setStartYear(2022);
         student.setEndYear(2026);

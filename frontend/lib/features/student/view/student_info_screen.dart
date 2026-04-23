@@ -19,7 +19,11 @@ class StudentInfoScreen extends ConsumerWidget {
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (e, _) => _ErrorView(onRetry: () => ref.invalidate(studentInfoProvider)),
-        data: (student) => _StudentInfoBody(student: student),
+        data: (student) => RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async => ref.invalidate(studentInfoProvider),
+          child: _StudentInfoBody(student: student),
+        ),
       ),
     );
   }
@@ -68,6 +72,7 @@ class _StudentInfoBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +95,7 @@ class _StudentInfoBody extends StatelessWidget {
           const SizedBox(height: 12),
           _buildSection(
             icon: Icons.location_on_outlined,
-            title: 'Hành chính',
+            title: 'Thông tin lý lịch',
             children: [
               _InfoRow(label: 'Nơi sinh', value: student.birthPlace ?? '—'),
               _InfoRow(label: 'Dân tộc', value: student.ethnicity ?? '—'),
@@ -106,18 +111,23 @@ class _StudentInfoBody extends StatelessWidget {
               _InfoRowDouble(
                 label1: 'Ngành học',
                 value1: student.major ?? '—',
-                label2: 'Lớp sinh hoạt',
-                value2: student.classCode ?? '—',
+                label2: 'Chuyên ngành',
+                value2: student.specialization ?? '—',
               ),
               const Divider(height: 1, color: Color(0xFFF0F0F0)),
               _InfoRowDouble(
-                label1: 'Khoa',
-                value1: student.faculty ?? '—',
-                label2: 'Niên khóa',
-                value2: student.academicYear ?? '—',
+                label1: 'Lớp sinh hoạt',
+                value1: student.classCode ?? '—',
+                label2: 'Khoa',
+                value2: student.faculty ?? '—',
               ),
               const Divider(height: 1, color: Color(0xFFF0F0F0)),
-              _InfoRow(label: 'Bậc đào tạo', value: student.degreeType ?? '—', isLast: true),
+              _InfoRowDouble(
+                label1: 'Niên khóa',
+                value1: student.academicYear ?? '—',
+                label2: 'Bậc đào tạo',
+                value2: student.degreeType ?? '—',
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -131,7 +141,7 @@ class _StudentInfoBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Xác thực sinh viên',
+          'Hệ thống sinh viên',
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),

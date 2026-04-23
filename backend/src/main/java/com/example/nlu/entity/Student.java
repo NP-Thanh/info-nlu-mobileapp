@@ -33,6 +33,8 @@ public class Student {
     private String phone;
     private String cccd;
     private String ethnicity;
+    private String religion;
+    private String nationality;
 
     @Column(name = "place_of_birth")
     private String placeOfBirth;

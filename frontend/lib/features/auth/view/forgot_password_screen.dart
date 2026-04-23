@@ -383,7 +383,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Mật khẩu mới sẽ được gửi đến email sinh viên đã đăng ký',
+                  'Mật khẩu mới sẽ được gửi đến email sinh viên của bạn',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
