@@ -49,6 +49,14 @@ public class JwtUtil {
         }
     }
 
+    public Date extractExpiration(String token) {
+        try {
+            return parseClaims(token).getExpiration();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getKey())
