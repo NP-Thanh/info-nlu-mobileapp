@@ -13,6 +13,8 @@ public interface StudentProgramRepository extends JpaRepository<StudentProgram, 
 
     Optional<StudentProgram> findFirstByStudent_Id(Long studentId);
 
+    List<StudentProgram> findAllByStudent_Id(Long studentId);
+
     /** Lấy danh sách student_id theo lớp và/hoặc khoa */
     @Query("""
         SELECT sp.student.id FROM StudentProgram sp
