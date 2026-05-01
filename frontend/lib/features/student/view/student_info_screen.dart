@@ -146,7 +146,7 @@ class _StudentInfoBody extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Chào mừng',
+          'Xin chào,',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -188,23 +188,63 @@ class _StudentInfoBody extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Mã số sinh viên',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                student.studentCode,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Mã số sinh viên',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          student.studentCode,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Avatar
+                  Stack(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.2),
+                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                        ),
+                        child: const Icon(Icons.person, size: 34, color: Colors.white),
+                      ),
+                      Positioned(
+                        bottom: 2,
+                        right: 2,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF69F0AE),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               Row(

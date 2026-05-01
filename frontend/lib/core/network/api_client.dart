@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  // static const String baseUrl = 'http://10.0.2.2:8080/api';
-  static const String baseUrl = 'http://10.0.94.125:8080/api';
+  // static const String baseUrl = 'http://10.0.2.2:8080/api'; //local
+  // static const String baseUrl = 'http://10.0.94.125:8080/api'; //ktx
+  static const String baseUrl = 'http://192.168.1.70:8080/api'; //nhà
 
   static final Dio _dio = Dio(
     BaseOptions(

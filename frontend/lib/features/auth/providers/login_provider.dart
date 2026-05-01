@@ -97,3 +97,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
 final loginProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {
   return LoginNotifier(ref.watch(authRepositoryProvider));
 });
+
+final logoutProvider = FutureProvider.autoDispose<void>((ref) async {
+  await ref.watch(authRepositoryProvider).logout();
+});

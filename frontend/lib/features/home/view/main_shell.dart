@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../student/view/student_info_screen.dart';
 import '../../schedule/view/schedule_screen.dart';
+import '../../settings/view/settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -46,7 +47,7 @@ class _MainShellState extends State<MainShell> {
         children: const [
           StudentInfoScreen(),
           ScheduleScreen(),
-          _SettingsPlaceholder(),
+          SettingsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -82,24 +83,3 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.settings_outlined, size: 48, color: AppColors.textSecondary),
-            SizedBox(height: 12),
-            Text('Cài đặt',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-          ],
-        ),
-      ),
-    );
-  }
-}

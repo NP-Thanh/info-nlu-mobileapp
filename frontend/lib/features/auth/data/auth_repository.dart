@@ -13,7 +13,6 @@ class AuthRepository {
 
     final data = response.data as Map<String, dynamic>;
 
-    // Lưu token vào SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', data['token'] ?? '');
     await prefs.setString('studentCode', data['studentCode'] ?? '');
@@ -23,8 +22,34 @@ class AuthRepository {
     return data;
   }
 
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await _dio.post('/auth/change-password', data: {
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      });
+      if (response.statusCode != 200) {
+        throw Exception(response.data?['message'] ?? 'Đổi mật khẩu thất bại');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? 'Đổi mật khẩu thất bại';
+      throw Exception(msg);
+    }
+  }
+
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    try {
+      await _dio.post('/auth/logout');
+    } catch (_) {
+      // Bỏ qua lỗi network
+    } finally {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    }
   }
 }
