@@ -22,4 +22,12 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
             @Param("academicYear") String academicYear,
             @Param("semester") String semester
     );
+
+    @Query("""
+        SELECT g FROM Grade g
+        JOIN FETCH g.enrollment e
+        JOIN FETCH e.course c
+        WHERE e.id IN :enrollmentIds
+    """)
+    List<Grade> findAllByEnrollmentIds(@Param("enrollmentIds") List<Long> enrollmentIds);
 }
