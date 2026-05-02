@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +28,17 @@ public class StudentController {
             String studentCode = authentication.getName();
             StudentInfoResponse response = studentService.getStudentInfo(studentCode);
             return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/grades/semesters")
+    public ResponseEntity<?> getGradeSemesters(Authentication authentication) {
+        try {
+            String studentCode = authentication.getName();
+            List<Map<String, String>> semesters = gradeService.getAvailableSemesters(studentCode);
+            return ResponseEntity.ok(semesters);
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
         }

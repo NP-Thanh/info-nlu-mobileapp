@@ -12,4 +12,6 @@ public class SemesterSummaryResponse {
     private Float gpa4;
     private Float cumulativeGpa10;
     private Float cumulativeGpa4;
+    private Integer semesterCredits;
+    private Integer cumulativeCredits;
 }

@@ -34,4 +34,10 @@ public class SemesterSummary {
 
     @Column(name = "cumulative_gpa_4")
     private Float cumulativeGpa4;
+
+    @Column(name = "semester_credits")
+    private Integer semesterCredits;
+
+    @Column(name = "cumulative_credits")
+    private Integer cumulativeCredits;
 }

@@ -5,6 +5,7 @@ import '../../student/providers/student_provider.dart';
 import '../../auth/providers/login_provider.dart';
 import '../../auth/view/login_screen.dart';
 import '../../auth/view/change_password_screen.dart';
+import '../../grades/view/grade_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -140,7 +141,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       iconBg: AppColors.primary.withOpacity(0.12),
                       iconColor: AppColors.primary,
                       title: 'Xem điểm',
-                      onTap: () {},
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const GradeScreen()),
+                      ),
                     ),
                     _MenuItem(
                       icon: Icons.notifications_outlined,

@@ -23,4 +23,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
            "JOIN FETCH e.course c " +
            "WHERE e.student.studentCode = :studentCode")
     List<Enrollment> findAllByStudentCode(@Param("studentCode") String studentCode);
+
+    @Query("SELECT DISTINCT e.semester, e.academicYear FROM Enrollment e " +
+           "WHERE e.student.studentCode = :studentCode " +
+           "ORDER BY e.academicYear DESC, e.semester DESC")
+    List<Object[]> findDistinctSemestersByStudent(@Param("studentCode") String studentCode);
 }
