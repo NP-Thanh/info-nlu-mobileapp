@@ -6,6 +6,7 @@ import '../../auth/providers/login_provider.dart';
 import '../../auth/view/login_screen.dart';
 import '../../auth/view/change_password_screen.dart';
 import '../../grades/view/grade_screen.dart';
+import '../../chatbot/view/chatbot_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -159,7 +160,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       iconColor: Colors.white,
                       title: 'Chatbot AI',
                       subtitle: 'NLU ASSISTANT',
-                      onTap: () {},
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+                      ),
                     ),
                   ]),
                   const SizedBox(height: 20),

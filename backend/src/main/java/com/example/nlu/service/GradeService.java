@@ -56,27 +56,51 @@ public class GradeService {
             gradeByEnrollmentId.put(g.getEnrollment().getId(), g);
         }
 
-        // môn nào chưa có Grade thì điểm = null
-        List<GradeItemResponse> items = enrollments.stream()
-                .map(e -> {
-                    Grade g = gradeByEnrollmentId.get(e.getId());
-                    return GradeItemResponse.builder()
-                            .courseCode(e.getCourse().getCourseCode())
+        // Gộp các enrollment cùng courseCode (LT + TH) thành 1 dòng
+        // Ưu tiên enrollment đã có điểm; nếu cả 2 đều có điểm thì lấy điểm cao hơn
+        Map<String, GradeItemResponse> itemByCode = new java.util.LinkedHashMap<>();
+        for (Enrollment e : enrollments) {
+            String code = e.getCourse().getCourseCode();
+            Grade g = gradeByEnrollmentId.get(e.getId());
+
+            GradeItemResponse existing = itemByCode.get(code);
+            if (existing == null) {
+                // Chưa có → thêm mới
+                itemByCode.put(code, GradeItemResponse.builder()
+                        .courseCode(code)
+                        .courseName(e.getCourse().getCourseName())
+                        .credits(e.getCourse().getCredits())
+                        .processScore(g != null ? g.getProcessScore() : null)
+                        .examScore(g != null ? g.getExamScore() : null)
+                        .finalScore10(g != null ? g.getFinalScore10() : null)
+                        .finalScore4(g != null ? g.getFinalScore4() : null)
+                        .result(g != null ? g.getResult() : null)
+                        .build());
+            } else if (g != null) {
+                // Đã có nhưng enrollment này có điểm → ghi đè nếu điểm cao hơn hoặc existing chưa có điểm
+                boolean existingHasScore = existing.getFinalScore10() != null;
+                boolean newIsHigher = existingHasScore
+                        && g.getFinalScore10() != null
+                        && g.getFinalScore10() > existing.getFinalScore10();
+                if (!existingHasScore || newIsHigher) {
+                    itemByCode.put(code, GradeItemResponse.builder()
+                            .courseCode(code)
                             .courseName(e.getCourse().getCourseName())
                             .credits(e.getCourse().getCredits())
-                            .processScore(g != null ? g.getProcessScore() : null)
-                            .examScore(g != null ? g.getExamScore() : null)
-                            .finalScore10(g != null ? g.getFinalScore10() : null)
-                            .finalScore4(g != null ? g.getFinalScore4() : null)
-                            .result(g != null ? g.getResult() : null)
-                            .build();
-                })
-                .toList();
+                            .processScore(g.getProcessScore())
+                            .examScore(g.getExamScore())
+                            .finalScore10(g.getFinalScore10())
+                            .finalScore4(g.getFinalScore4())
+                            .result(g.getResult())
+                            .build());
+                }
+            }
+        }
 
         return GradeResponse.builder()
                 .semester(semester)
                 .academicYear(academicYear)
-                .grades(items)
+                .grades(new java.util.ArrayList<>(itemByCode.values()))
                 .build();
     }
 

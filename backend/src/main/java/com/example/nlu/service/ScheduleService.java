@@ -114,17 +114,20 @@ public class ScheduleService {
 
     private ScheduleItemResponse toItemResponse(Schedule s) {
         String[] times = PERIOD_TIMES.getOrDefault(s.getPeriod(), new String[]{"07:00", "09:15"});
+        Enrollment e = s.getEnrollment();
         return ScheduleItemResponse.builder()
                 .scheduleId(s.getId())
-                .courseName(s.getEnrollment().getCourse().getCourseName())
-                .courseCode(s.getEnrollment().getCourse().getCourseCode())
-                .credits(s.getEnrollment().getCourse().getCredits())
+                .courseName(e.getCourse().getCourseName())
+                .courseCode(e.getCourse().getCourseCode())
+                .credits(e.getCourse().getCredits())
                 .lecturer(s.getLecturer())
                 .room(s.getRoom())
                 .dayOfWeek(s.getDayOfWeek())
                 .period(s.getPeriod())
                 .periodStart(times[0])
                 .periodEnd(times[1])
+                .enrollmentStartDate(e.getStartDate() != null ? e.getStartDate().toString() : null)
+                .enrollmentEndDate(e.getEndDate() != null ? e.getEndDate().toString() : null)
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package com.example.nlu.controller;
 
 import com.example.nlu.dto.request.ChatbotRequest;
+import com.example.nlu.dto.response.ChatbotLogResponse;
 import com.example.nlu.dto.response.ChatbotResponse;
 import com.example.nlu.service.ChatbotService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,5 +35,11 @@ public class ChatbotController {
             return ResponseEntity.internalServerError()
                     .body(Map.of("message", "Đã xảy ra lỗi, vui lòng thử lại sau."));
         }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<ChatbotLogResponse>> getHistory(Authentication authentication) {
+        String studentCode = authentication.getName();
+        return ResponseEntity.ok(chatbotService.getHistory(studentCode));
     }
 }

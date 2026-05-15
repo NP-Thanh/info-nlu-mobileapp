@@ -17,4 +17,6 @@ public class ScheduleItemResponse {
     private Integer period;
     private String periodStart;
     private String periodEnd;
+    private String enrollmentStartDate;
+    private String enrollmentEndDate;
 }

@@ -473,6 +473,19 @@ public class ChatbotService {
         }
     }
 
+    public List<com.example.nlu.dto.response.ChatbotLogResponse> getHistory(String studentCode) {
+        return chatbotLogRepository.findByStudentCodeOrderByCreatedAt(studentCode)
+                .stream()
+                .map(c -> com.example.nlu.dto.response.ChatbotLogResponse.builder()
+                        .id(c.getId())
+                        .question(c.getQuestion())
+                        .answer(c.getAnswer())
+                        .createdAt(c.getCreatedAt() != null ? c.getCreatedAt().toString() : null)
+                        .isFlagged(c.getIsFlagged())
+                        .build())
+                .toList();
+    }
+
     // Save log
     private void saveChatLog(String studentCode, String question, String answer, boolean flagged) {
         try {

@@ -13,20 +13,11 @@ class GradeScreen extends ConsumerStatefulWidget {
 
 class _GradeScreenState extends ConsumerState<GradeScreen> {
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _chartKey = GlobalKey();
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _scrollToChart() {
-    final ctx = _chartKey.currentContext;
-    if (ctx != null) {
-      Scrollable.ensureVisible(ctx,
-          duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
-    }
   }
 
   Future<void> _refresh() async {
@@ -126,7 +117,6 @@ class _GradeScreenState extends ConsumerState<GradeScreen> {
               selected: current,
               onChanged: (opt) =>
                   ref.read(selectedSemesterProvider.notifier).state = opt,
-              onChartTap: _scrollToChart,
             ),
           ),
         ),
@@ -202,24 +192,6 @@ class _GradeScreenState extends ConsumerState<GradeScreen> {
                         child: _CourseCard(item: gradeData.grades[i]),
                       ),
                       childCount: gradeData.grades.length,
-                    ),
-                  ),
-                ),
-        ),
-
-        // Chart
-        gradeAsync.when(
-          loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-          error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-          data: (gradeData) => gradeData.grades.isEmpty
-              ? const SliverToBoxAdapter(child: SizedBox.shrink())
-              : SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: _GradeChart(
-                      key: _chartKey,
-                      gradeData: gradeData,
-                      semester: current,
                     ),
                   ),
                 ),
@@ -336,109 +308,73 @@ class _SemesterSelector extends StatelessWidget {
   final List<SemesterOption> semesters;
   final SemesterOption selected;
   final ValueChanged<SemesterOption> onChanged;
-  final VoidCallback onChartTap;
 
   const _SemesterSelector({
     required this.semesters,
     required this.selected,
     required this.onChanged,
-    required this.onChartTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _showPicker(context),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+    return GestureDetector(
+      onTap: () => _showPicker(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: AppColors.primary.withOpacity(0.25), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: AppColors.primary.withOpacity(0.25), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2)),
-                ],
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              child: Row(
+              child: const Icon(Icons.calendar_month_outlined,
+                  color: AppColors.primary, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.calendar_month_outlined,
-                        color: AppColors.primary, size: 16),
+                  const Text(
+                    'HỌC KỲ ĐANG XEM',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'HỌC KỲ ĐANG XEM',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          selected.label,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 2),
+                  Text(
+                    selected.label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const Icon(Icons.keyboard_arrow_down,
-                      color: AppColors.primary, size: 22),
                 ],
               ),
             ),
-          ),
+            const Icon(Icons.keyboard_arrow_down,
+                color: AppColors.primary, size: 22),
+          ],
         ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: onChartTap,
-          child: Container(
-            width: 50,
-            height: 58,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2), width: 1.5),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.bar_chart_rounded,
-                    color: AppColors.primary, size: 22),
-                SizedBox(height: 2),
-                Text('Biểu đồ',
-                    style: TextStyle(
-                        fontSize: 9,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -495,40 +431,49 @@ class _SemesterPickerSheet extends StatelessWidget {
                 color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
-          ...semesters.map((opt) {
-            final isSelected = opt == selected;
-            return ListTile(
-              leading: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withOpacity(0.12)
-                      : AppColors.background,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.school_outlined,
-                    size: 18,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...semesters.map((opt) {
+                    final isSelected = opt == selected;
+                    return ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.12)
+                              : AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.school_outlined,
+                            size: 18,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary),
+                      ),
+                      title: Text(opt.label,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.normal,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          )),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle,
+                              color: AppColors.primary, size: 20)
+                          : null,
+                      onTap: () => onChanged(opt),
+                    );
+                  }),
+                ],
               ),
-              title: Text(opt.label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.normal,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textPrimary,
-                  )),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle,
-                      color: AppColors.primary, size: 20)
-                  : null,
-              onTap: () => onChanged(opt),
-            );
-          }),
+            ),
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -952,240 +897,3 @@ class _ScoreChip extends StatelessWidget {
   }
 }
 
-// ─── Grade Chart ──────────────────────────────────────────────────────────────
-
-class _GradeChart extends StatelessWidget {
-  final GradeData gradeData;
-  final SemesterOption semester;
-
-  const _GradeChart({
-    super.key,
-    required this.gradeData,
-    required this.semester,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final grades = gradeData.grades;
-    if (grades.isEmpty) return const SizedBox.shrink();
-
-    const barMaxHeight = 150.0;
-    const maxScore = 10.0;
-    const barWidth = 38.0;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title row
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.bar_chart_rounded,
-                    color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Biểu đồ điểm học phần',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary),
-                    ),
-                    Text(
-                      'HK ${semester.semester} · ${semester.academicYear}',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Legend
-          Row(
-            children: [
-              _LegendDot(color: AppColors.primary, label: 'Đạt'),
-              const SizedBox(width: 16),
-              const _LegendDot(color: Color(0xFFE53935), label: 'Nợ môn'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Chart scroll
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: (barWidth + 16) * grades.length + 48,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _buildYAxis(barMaxHeight),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        _buildGridLines(barMaxHeight),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: grades.map((g) {
-                              final score = g.finalScore10 ?? 0;
-                              final barH =
-                                  (score / maxScore) * barMaxHeight;
-                              final color = g.isPassed
-                                  ? AppColors.primary
-                                  : const Color(0xFFE53935);
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      score.toStringAsFixed(1),
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: color),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Container(
-                                      width: barWidth,
-                                      height: barH.clamp(4.0, barMaxHeight),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            color,
-                                            color.withOpacity(0.65),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        ),
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                                top: Radius.circular(8)),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    SizedBox(
-                                      width: barWidth,
-                                      child: Text(
-                                        g.courseCode,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                            fontSize: 9,
-                                            color: AppColors.textSecondary),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildYAxis(double maxH) {
-    const levels = [10.0, 7.5, 5.0, 2.5];
-    return SizedBox(
-      width: 28,
-      height: maxH + 24,
-      child: Stack(
-        children: levels.map((lvl) {
-          final top = (1 - lvl / 10) * maxH + 8;
-          return Positioned(
-            top: top,
-            right: 0,
-            child: Text(
-              lvl == lvl.truncateToDouble()
-                  ? lvl.toInt().toString()
-                  : lvl.toString(),
-              style: const TextStyle(
-                  fontSize: 9, color: AppColors.textSecondary),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildGridLines(double maxH) {
-    const levels = [10.0, 7.5, 5.0, 2.5];
-    return SizedBox(
-      height: maxH + 24,
-      child: Stack(
-        children: levels.map((lvl) {
-          final top = (1 - lvl / 10) * maxH + 8;
-          return Positioned(
-            top: top,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 1,
-              color: const Color(0xFFEEEEEE),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12, color: AppColors.textSecondary)),
-      ],
-    );
-  }
-}

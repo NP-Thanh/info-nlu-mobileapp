@@ -9,6 +9,8 @@ class ScheduleItem {
   final int period;   // 1-4
   final String periodStart;
   final String periodEnd;
+  final DateTime? enrollmentStartDate;
+  final DateTime? enrollmentEndDate;
 
   const ScheduleItem({
     required this.scheduleId,
@@ -21,6 +23,8 @@ class ScheduleItem {
     required this.period,
     required this.periodStart,
     required this.periodEnd,
+    this.enrollmentStartDate,
+    this.enrollmentEndDate,
   });
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,12 @@ class ScheduleItem {
       period: json['period'] ?? 1,
       periodStart: json['periodStart'] ?? '07:00',
       periodEnd: json['periodEnd'] ?? '09:15',
+      enrollmentStartDate: json['enrollmentStartDate'] != null
+          ? DateTime.parse(json['enrollmentStartDate'])
+          : null,
+      enrollmentEndDate: json['enrollmentEndDate'] != null
+          ? DateTime.parse(json['enrollmentEndDate'])
+          : null,
     );
   }
 
@@ -109,8 +119,20 @@ class ScheduleData {
     final wStart = weekStart(week);
     final wEnd = weekEnd(week);
 
+    // Tuần này phải nằm trong khoảng học kỳ
     if (wEnd.isBefore(startDate!) || wStart.isAfter(endDate!)) return [];
-    return items.toList();
+
+    // Lọc từng item theo enrollmentEndDate riêng của nó
+    return items.where((item) {
+      // Ngày cụ thể của môn này trong tuần đang xem
+      final itemDate = _dateOfDayInWeek(wStart, item.dayOfWeek);
+
+      // Nếu item có enrollmentEndDate riêng, dùng nó để lọc
+      final itemEnd = item.enrollmentEndDate ?? endDate!;
+      final itemStart = item.enrollmentStartDate ?? startDate!;
+
+      return !itemDate.isBefore(itemStart) && !itemDate.isAfter(itemEnd);
+    }).toList();
   }
 
   // Tất cả ngày có lịch học trong học kỳ
@@ -120,11 +142,12 @@ class ScheduleData {
     final semStart = _mondayOf(startDate!);
     for (int week = 1; week <= totalWeeks; week++) {
       final wStart = semStart.add(Duration(days: (week - 1) * 7));
-      final wEnd = wStart.add(const Duration(days: 6));
       if (wStart.isAfter(endDate!)) break;
       for (final item in items) {
         final d = _dateOfDayInWeek(wStart, item.dayOfWeek);
-        if (!d.isBefore(startDate!) && !d.isAfter(endDate!)) {
+        final itemStart = item.enrollmentStartDate ?? startDate!;
+        final itemEnd = item.enrollmentEndDate ?? endDate!;
+        if (!d.isBefore(itemStart) && !d.isAfter(itemEnd)) {
           dates.add(DateTime(d.year, d.month, d.day));
         }
       }
