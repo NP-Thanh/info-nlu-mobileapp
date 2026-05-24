@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -137,4 +138,74 @@ public class ScheduleService {
                 .startDate(null).endDate(null)
                 .items(List.of()).build();
     }
+
+    /** Thông báo lịch học trong ngày (dùng cho push 7h sáng). */
+    public DailyScheduleMessage buildDailyScheduleMessage(String studentCode, LocalDate today) {
+        ScheduleResponse schedule = getLatestSchedule(studentCode);
+        int dayOfWeek = toScheduleDayOfWeek(today);
+
+        List<ScheduleItemResponse> todayItems = schedule.getItems().stream()
+                .filter(item -> Objects.equals(item.getDayOfWeek(), dayOfWeek))
+                .filter(item -> isActiveOnDate(item, today))
+                .sorted(Comparator.comparingInt(ScheduleItemResponse::getPeriod))
+                .toList();
+
+        String dateLabel = today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String dayName = dayNameVietnamese(today);
+
+        if (todayItems.isEmpty()) {
+            return new DailyScheduleMessage(
+                    "Lịch học",
+                    "Hôm nay (" + dayName + ", " + dateLabel + ") bạn không có lịch học.",
+                    false);
+        }
+
+        StringBuilder content = new StringBuilder();
+        content.append("Hôm nay (").append(dayName).append(", ").append(dateLabel)
+                .append(") bạn có ").append(todayItems.size()).append(" buổi học:\n");
+        for (ScheduleItemResponse item : todayItems) {
+            content.append("• Ca ").append(item.getPeriod())
+                    .append(" (").append(item.getPeriodStart()).append("-").append(item.getPeriodEnd()).append("): ")
+                    .append(item.getCourseName());
+            if (item.getRoom() != null && !item.getRoom().isBlank()) {
+                content.append(" — ").append(item.getRoom());
+            }
+            content.append("\n");
+        }
+        return new DailyScheduleMessage(
+                "Lịch học hôm nay — " + todayItems.size() + " buổi",
+                content.toString().trim(),
+                true);
+    }
+
+    private int toScheduleDayOfWeek(LocalDate date) {
+        int javaDow = date.getDayOfWeek().getValue();
+        return javaDow == 7 ? 8 : javaDow + 1;
+    }
+
+    private boolean isActiveOnDate(ScheduleItemResponse item, LocalDate date) {
+        if (item.getEnrollmentStartDate() != null) {
+            LocalDate start = LocalDate.parse(item.getEnrollmentStartDate());
+            if (date.isBefore(start)) return false;
+        }
+        if (item.getEnrollmentEndDate() != null) {
+            LocalDate end = LocalDate.parse(item.getEnrollmentEndDate());
+            if (date.isAfter(end)) return false;
+        }
+        return true;
+    }
+
+    private String dayNameVietnamese(LocalDate date) {
+        return switch (date.getDayOfWeek()) {
+            case MONDAY -> "Thứ Hai";
+            case TUESDAY -> "Thứ Ba";
+            case WEDNESDAY -> "Thứ Tư";
+            case THURSDAY -> "Thứ Năm";
+            case FRIDAY -> "Thứ Sáu";
+            case SATURDAY -> "Thứ Bảy";
+            case SUNDAY -> "Chủ Nhật";
+        };
+    }
+
+    public record DailyScheduleMessage(String title, String content, boolean hasClasses) {}
 }

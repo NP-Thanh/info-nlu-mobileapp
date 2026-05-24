@@ -7,6 +7,7 @@ import '../providers/schedule_provider.dart';
 import 'widgets/schedule_header_card.dart';
 import 'widgets/schedule_day_section.dart';
 import 'widgets/schedule_calendar_sheet.dart';
+import '../../notifications/widgets/notification_icon_button.dart';
 
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
@@ -118,11 +119,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-          onPressed: () {},
-        ),
+      actions: const [
+        NotificationIconButton(),
       ],
     );
   }

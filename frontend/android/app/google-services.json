@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "759991780756",
+    "project_id": "info-nlu",
+    "storage_bucket": "info-nlu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:759991780756:android:7f89cfca28542f7f4c3b81",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWi_-IausbBLpVetfzcS1cSJVW0GJX78s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/push_notification_service.dart';
 
 class AuthRepository {
   final Dio _dio = ApiClient.instance;
@@ -44,6 +45,7 @@ class AuthRepository {
 
   Future<void> logout() async {
     try {
+      await PushNotificationService.unregisterOnLogout();
       await _dio.post('/auth/logout');
     } catch (_) {
       // Bỏ qua lỗi network

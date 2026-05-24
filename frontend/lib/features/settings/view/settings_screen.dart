@@ -7,6 +7,9 @@ import '../../auth/view/login_screen.dart';
 import '../../auth/view/change_password_screen.dart';
 import '../../grades/view/grade_screen.dart';
 import '../../chatbot/view/chatbot_screen.dart';
+import '../../notifications/notification_navigation.dart';
+import '../../notifications/providers/notification_provider.dart';
+import '../../notifications/widgets/notification_icon_button.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +20,14 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationBadgeProvider.notifier).refresh();
+    });
+  }
 
   Future<void> _refresh() async {
     ref.invalidate(studentInfoProvider);
@@ -113,6 +124,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final studentAsync = ref.watch(studentInfoProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -151,8 +163,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       iconBg: AppColors.primary.withOpacity(0.12),
                       iconColor: AppColors.primary,
                       title: 'Thông báo',
-                      badge: 12,
-                      onTap: () {},
+                      badge: unreadCount > 0 ? unreadCount : null,
+                      onTap: () => openNotificationScreen(context, ref),
                     ),
                     _MenuItem(
                       icon: Icons.smart_toy_outlined,
@@ -253,11 +265,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-          onPressed: () {},
-        ),
+      actions: const [
+        NotificationIconButton(),
       ],
     );
   }

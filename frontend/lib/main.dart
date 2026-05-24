@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/navigation/app_navigator.dart';
+import 'core/services/push_notification_service.dart';
 import 'features/auth/view/login_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PushNotificationService.initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -13,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'Thông tin NLUers',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

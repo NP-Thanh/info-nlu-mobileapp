@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../providers/student_provider.dart';
 import '../model/student_info.dart';
+import '../../notifications/widgets/notification_icon_button.dart';
 
 class StudentInfoScreen extends ConsumerWidget {
   const StudentInfoScreen({super.key});
@@ -13,7 +14,7 @@ class StudentInfoScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: studentAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -28,7 +29,7 @@ class StudentInfoScreen extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppColors.background,
       elevation: 0,
@@ -55,11 +56,8 @@ class StudentInfoScreen extends ConsumerWidget {
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-          onPressed: () {},
-        ),
+      actions: const [
+        NotificationIconButton(),
       ],
     );
   }

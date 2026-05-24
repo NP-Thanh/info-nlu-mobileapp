@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../providers/login_provider.dart';
 import '../../home/view/main_shell.dart';
+import '../../../core/services/push_notification_service.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<LoginState>(loginProvider, (prev, next) {
       if (next.isSuccess) {
         ref.read(loginProvider.notifier).clearMessages();
+        PushNotificationService.registerTokenWithBackend();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainShell()),
         );
