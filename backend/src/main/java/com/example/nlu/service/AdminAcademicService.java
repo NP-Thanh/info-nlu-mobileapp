@@ -124,9 +124,25 @@ public class AdminAcademicService {
     public Map<String, Object> upsertManualGrade(String courseCode, String studentCode, Float processScore, Float examScore) {
         Course course = getCourseByCode(courseCode);
         Student student = getStudentByCode(studentCode);
+        Grade grade = upsertGrade(student, course, null, null, processScore, examScore);
+        return toGradeResponse(grade, studentCode, courseCode, null, null);
+    }
 
-        Grade grade = upsertGrade(student, course, processScore, examScore);
-        return toGradeResponse(grade, studentCode, courseCode);
+    @Transactional
+    public Map<String, Object> upsertManualGradeWithTerm(
+            String studentCode,
+            String academicYear,
+            String semester,
+            String courseCode,
+            Float processScore,
+            Float examScore
+    ) {
+        Student student = getStudentByCode(studentCode);
+        Course course = getCourseByCode(courseCode);
+        validateTerm(academicYear, semester);
+
+        Grade grade = upsertGrade(student, course, academicYear, semester, processScore, examScore);
+        return toGradeResponse(grade, studentCode, courseCode, academicYear, semester);
     }
 
     @Transactional
@@ -150,11 +166,14 @@ public class AdminAcademicService {
 
                 try {
                     String studentCode = getStringCell(row.getCell(0));
-                    Float processScore = getFloatCell(row.getCell(1));
-                    Float examScore = getFloatCell(row.getCell(2));
+                    String academicYear = getStringCell(row.getCell(1));
+                    String semester = getStringCell(row.getCell(2));
+                    Float processScore = getFloatCell(row.getCell(3));
+                    Float examScore = getFloatCell(row.getCell(4));
 
                     Student student = getStudentByCode(studentCode);
-                    upsertGrade(student, course, processScore, examScore);
+                    validateTerm(academicYear, semester);
+                    upsertGrade(student, course, academicYear, semester, processScore, examScore);
                     successCount++;
                 } catch (Exception e) {
                     errors.add("Dòng " + (rowIndex + 1) + ": " + e.getMessage());
@@ -174,18 +193,80 @@ public class AdminAcademicService {
         );
     }
 
-    private Grade upsertGrade(Student student, Course course, Float processScore, Float examScore) {
+    public List<Map<String, String>> searchStudentSuggestions(String keyword) {
+        String kw = isBlank(keyword) ? "" : keyword.trim();
+        return studentRepository.searchStudents(kw, null)
+                .stream()
+                .limit(20)
+                .map(s -> Map.of(
+                        "studentCode", s.getStudentCode(),
+                        "fullName", Optional.ofNullable(s.getFullName()).orElse("")
+                ))
+                .toList();
+    }
+
+    public List<Map<String, String>> getStudentTerms(String studentCode) {
+        getStudentByCode(studentCode);
+        return enrollmentRepository.findTermsByStudentCode(studentCode.trim())
+                .stream()
+                .map(row -> Map.of(
+                        "semester", String.valueOf(row[0]),
+                        "academicYear", String.valueOf(row[1]),
+                        "label", "Học kỳ " + row[0] + ", năm học " + row[1]
+                ))
+                .toList();
+    }
+
+    public List<Map<String, String>> getStudentCoursesByTerm(String studentCode, String academicYear, String semester, String keyword) {
+        getStudentByCode(studentCode);
+        validateTerm(academicYear, semester);
+        String kw = isBlank(keyword) ? null : keyword.trim();
+        return enrollmentRepository.findCoursesByStudentAndTerm(studentCode.trim(), academicYear.trim(), semester.trim(), kw)
+                .stream()
+                .map(enrollment -> {
+                    String code = Optional.ofNullable(enrollment.getCourse().getCourseCode()).orElse("");
+                    String name = Optional.ofNullable(enrollment.getCourse().getCourseName()).orElse("");
+                    Map<String, String> item = new LinkedHashMap<>();
+                    item.put("courseCode", code);
+                    item.put("courseName", name);
+                    item.put("display", code + " - " + name);
+                    return item;
+                })
+                .distinct()
+                .toList();
+    }
+
+    private Grade upsertGrade(
+            Student student,
+            Course course,
+            String academicYear,
+            String semester,
+            Float processScore,
+            Float examScore
+    ) {
         validateScore(processScore, "Điểm quá trình");
         validateScore(examScore, "Điểm thi");
 
-        Enrollment enrollment = enrollmentRepository.findTopByStudent_IdAndCourse_IdOrderByIdDesc(student.getId(), course.getId())
-                .orElseGet(() -> {
-                    Enrollment e = new Enrollment();
-                    e.setStudent(student);
-                    e.setCourse(course);
-                    e.setAttempt(1);
-                    return enrollmentRepository.save(e);
-                });
+        Enrollment enrollment;
+        if (!isBlank(academicYear) && !isBlank(semester)) {
+            enrollment = enrollmentRepository.findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
+                    student.getId(), course.getId(), academicYear.trim(), semester.trim()
+            ).orElseThrow(() -> new IllegalArgumentException(
+                    "Không tìm thấy enrollment lý thuyết (is_lab=0) cho môn học trong học kỳ/năm học đã chọn"
+            ));
+        } else {
+            enrollment = enrollmentRepository.findTopByStudent_IdAndCourse_IdAndIsLabFalseOrderByIdDesc(
+                            student.getId(), course.getId()
+                    )
+                    .orElseGet(() -> {
+                        Enrollment e = new Enrollment();
+                        e.setStudent(student);
+                        e.setCourse(course);
+                        e.setAttempt(1);
+                        e.setIsLab(false);
+                        return enrollmentRepository.save(e);
+                    });
+        }
 
         Grade grade = gradeRepository.findByEnrollment_Id(enrollment.getId())
                 .orElseGet(Grade::new);
@@ -201,10 +282,18 @@ public class AdminAcademicService {
         return gradeRepository.save(grade);
     }
 
-    private Map<String, Object> toGradeResponse(Grade grade, String studentCode, String courseCode) {
+    private Map<String, Object> toGradeResponse(
+            Grade grade,
+            String studentCode,
+            String courseCode,
+            String academicYear,
+            String semester
+    ) {
         return Map.of(
                 "studentCode", studentCode,
                 "courseCode", courseCode,
+                "academicYear", academicYear == null ? "" : academicYear,
+                "semester", semester == null ? "" : semester,
                 "processScore", grade.getProcessScore(),
                 "examScore", grade.getExamScore(),
                 "finalScore10", grade.getFinalScore10(),
@@ -247,6 +336,15 @@ public class AdminAcademicService {
         }
         if (score < 0 || score > 10) {
             throw new IllegalArgumentException(label + " phải trong khoảng 0-10");
+        }
+    }
+
+    private void validateTerm(String academicYear, String semester) {
+        if (isBlank(academicYear)) {
+            throw new IllegalArgumentException("academic_year không được để trống");
+        }
+        if (isBlank(semester)) {
+            throw new IllegalArgumentException("semester không được để trống");
         }
     }
 

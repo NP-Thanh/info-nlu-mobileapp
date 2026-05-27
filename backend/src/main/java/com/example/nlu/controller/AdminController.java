@@ -156,9 +156,11 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> upsertManualGrade(@RequestBody Map<String, Object> request) {
         try {
-            Map<String, Object> result = adminAcademicService.upsertManualGrade(
-                    (String) request.get("course_code"),
+            Map<String, Object> result = adminAcademicService.upsertManualGradeWithTerm(
                     (String) request.get("mssv"),
+                    (String) request.get("academic_year"),
+                    String.valueOf(request.get("semester")),
+                    (String) request.get("course_code"),
                     request.get("process_score") == null ? null : ((Number) request.get("process_score")).floatValue(),
                     request.get("exam_score") == null ? null : ((Number) request.get("exam_score")).floatValue()
             );
@@ -167,6 +169,43 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/grades/students/suggestions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getStudentSuggestions(@RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(Map.of(
+                "data", adminAcademicService.searchStudentSuggestions(keyword)
+        ));
+    }
+
+    @GetMapping("/grades/students/{mssv}/terms")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getStudentTerms(@PathVariable String mssv) {
+        try {
+            return ResponseEntity.ok(Map.of(
+                    "data", adminAcademicService.getStudentTerms(mssv)
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/grades/students/{mssv}/courses")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getStudentCourses(
+            @PathVariable String mssv,
+            @RequestParam("academic_year") String academicYear,
+            @RequestParam("semester") String semester,
+            @RequestParam(required = false) String keyword
+    ) {
+        try {
+            return ResponseEntity.ok(Map.of(
+                    "data", adminAcademicService.getStudentCoursesByTerm(mssv, academicYear, semester, keyword)
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 

@@ -40,4 +40,7 @@ public class Enrollment {
     private LocalDate endDate;
 
     private Integer attempt;
+
+    @Column(name = "is_lab")
+    private Boolean isLab = false;
 }
