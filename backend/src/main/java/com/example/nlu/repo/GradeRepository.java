@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface GradeRepository extends JpaRepository<Grade, Long> {
 
@@ -30,4 +31,6 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
         WHERE e.id IN :enrollmentIds
     """)
     List<Grade> findAllByEnrollmentIds(@Param("enrollmentIds") List<Long> enrollmentIds);
+
+    Optional<Grade> findByEnrollment_Id(Long enrollmentId);
 }

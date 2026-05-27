@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
@@ -28,4 +29,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
            "WHERE e.student.studentCode = :studentCode " +
            "ORDER BY e.academicYear DESC, e.semester DESC")
     List<Object[]> findDistinctSemestersByStudent(@Param("studentCode") String studentCode);
+
+    Optional<Enrollment> findTopByStudent_IdAndCourse_IdOrderByIdDesc(Long studentId, Long courseId);
 }

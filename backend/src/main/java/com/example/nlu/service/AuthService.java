@@ -3,6 +3,7 @@ package com.example.nlu.service;
 import com.example.nlu.dto.request.ChangePasswordRequest;
 import com.example.nlu.dto.request.LoginRequest;
 import com.example.nlu.dto.response.LoginResponse;
+import com.example.nlu.entity.Role;
 import com.example.nlu.entity.Student;
 import com.example.nlu.entity.User;
 import com.example.nlu.jwt.JwtUtil;
@@ -27,19 +28,31 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public LoginResponse login(LoginRequest request) {
-        log.info("Login attempt for studentId: {}", request.getStudentId());
+        String username = request.getStudentId();
+        log.info("Login attempt for username: {}", username);
 
-        User user = userRepository.findByUsername(request.getStudentId())
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> {
-                    log.warn("User not found: {}", request.getStudentId());
-                    return new RuntimeException("Sai mã số sinh viên hoặc mật khẩu");
+                    log.warn("User not found: {}", username);
+                    return new RuntimeException("Sai tài khoản hoặc mật khẩu");
                 });
 
         log.info("User found: {}, stored hash: {}", user.getUsername(), user.getPassword());
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Password mismatch for user: {}", user.getUsername());
-            throw new RuntimeException("Sai mã số sinh viên hoặc mật khẩu");
+            throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
+        }
+
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+        log.info("Login success for: {}", user.getUsername());
+
+        if (user.getRole() == null) {
+            throw new RuntimeException("Tài khoản chưa được phân quyền");
+        }
+
+        if (user.getRole() == Role.ADMIN) {
+            return new LoginResponse(token, user.getUsername(), user.getUsername(), user.getRole().name());
         }
 
         Student student = studentRepository.findByUser_Id(user.getId())
@@ -47,10 +60,6 @@ public class AuthService {
                     log.warn("Student not found for userId: {}", user.getId());
                     return new RuntimeException("Không tìm thấy thông tin sinh viên");
                 });
-
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-        log.info("Login success for: {}", user.getUsername());
-
         return new LoginResponse(token, student.getStudentCode(), student.getFullName(), user.getRole().name());
     }
 
