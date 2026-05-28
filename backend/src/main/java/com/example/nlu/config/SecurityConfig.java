@@ -1,6 +1,7 @@
 package com.example.nlu.config;
 
 import com.example.nlu.jwt.JwtAuthFilter;
+import com.example.nlu.jwt.StudentAccessFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final StudentAccessFilter studentAccessFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,7 +38,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(studentAccessFilter, JwtAuthFilter.class);
         return http.build();
     }
 }

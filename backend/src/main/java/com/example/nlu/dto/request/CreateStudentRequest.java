@@ -25,4 +25,8 @@ public class CreateStudentRequest {
 
     // User field
     private String email;
+
+    // StudentProgram
+    private Long programId;
+    private String className;
 }

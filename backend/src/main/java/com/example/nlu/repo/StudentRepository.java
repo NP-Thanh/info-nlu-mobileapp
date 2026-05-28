@@ -1,6 +1,7 @@
 package com.example.nlu.repo;
 
 import com.example.nlu.entity.Student;
+import com.example.nlu.entity.StudentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,9 +23,18 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                OR (LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))))
           AND (:startYear IS NULL OR s.startYear = :startYear)
+          AND (:status IS NULL OR s.status = :status)
     """)
     List<Student> searchStudents(
             @Param("keyword") String keyword,
-            @Param("startYear") Integer startYear
+            @Param("startYear") Integer startYear,
+            @Param("status") StudentStatus status
     );
+
+    @Query("""
+        SELECT DISTINCT s.startYear FROM Student s
+        WHERE s.startYear IS NOT NULL
+        ORDER BY s.startYear DESC
+        """)
+    List<Integer> findDistinctStartYears();
 }

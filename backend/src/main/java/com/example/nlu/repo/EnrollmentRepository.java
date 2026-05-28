@@ -65,4 +65,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             @Param("semester") String semester,
             @Param("keyword") String keyword
     );
+
+    List<Enrollment> findAllByStudent_Id(Long studentId);
 }

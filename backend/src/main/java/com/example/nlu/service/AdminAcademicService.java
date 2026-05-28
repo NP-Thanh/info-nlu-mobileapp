@@ -3,10 +3,12 @@ package com.example.nlu.service;
 import com.example.nlu.entity.Course;
 import com.example.nlu.entity.Enrollment;
 import com.example.nlu.entity.Grade;
+import com.example.nlu.entity.SemesterSummary;
 import com.example.nlu.entity.Student;
 import com.example.nlu.repo.CourseRepository;
 import com.example.nlu.repo.EnrollmentRepository;
 import com.example.nlu.repo.GradeRepository;
+import com.example.nlu.repo.SemesterSummaryRepository;
 import com.example.nlu.repo.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
@@ -26,6 +28,7 @@ public class AdminAcademicService {
     private final StudentRepository studentRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final GradeRepository gradeRepository;
+    private final SemesterSummaryRepository semesterSummaryRepository;
 
     public List<Course> getCourses() {
         return courseRepository.findAll();
@@ -142,6 +145,7 @@ public class AdminAcademicService {
         validateTerm(academicYear, semester);
 
         Grade grade = upsertGrade(student, course, academicYear, semester, processScore, examScore);
+        recomputeSemesterSummary(student, academicYear, semester);
         return toGradeResponse(grade, studentCode, courseCode, academicYear, semester);
     }
 
@@ -174,6 +178,7 @@ public class AdminAcademicService {
                     Student student = getStudentByCode(studentCode);
                     validateTerm(academicYear, semester);
                     upsertGrade(student, course, academicYear, semester, processScore, examScore);
+                    recomputeSemesterSummary(student, academicYear, semester);
                     successCount++;
                 } catch (Exception e) {
                     errors.add("Dòng " + (rowIndex + 1) + ": " + e.getMessage());
@@ -195,7 +200,7 @@ public class AdminAcademicService {
 
     public List<Map<String, String>> searchStudentSuggestions(String keyword) {
         String kw = isBlank(keyword) ? "" : keyword.trim();
-        return studentRepository.searchStudents(kw, null)
+        return studentRepository.searchStudents(kw, null, null)
                 .stream()
                 .limit(20)
                 .map(s -> Map.of(
@@ -282,6 +287,123 @@ public class AdminAcademicService {
         return gradeRepository.save(grade);
     }
 
+    private void recomputeSemesterSummary(Student student, String academicYear, String semester) {
+        List<Grade> grades = gradeRepository.findByStudentAndSemester(
+                student.getStudentCode(),
+                academicYear,
+                semester
+        );
+
+        Map<String, Grade> gradeByCourseCode = new LinkedHashMap<>();
+        for (Grade grade : grades) {
+            if (grade.getEnrollment() == null || grade.getEnrollment().getCourse() == null) {
+                continue;
+            }
+            String courseCode = grade.getEnrollment().getCourse().getCourseCode();
+            if (isBlank(courseCode) || grade.getFinalScore10() == null || grade.getFinalScore4() == null) {
+                continue;
+            }
+            Grade existing = gradeByCourseCode.get(courseCode);
+            boolean isCurrentTheory = grade.getEnrollment().getIsLab() == null || !grade.getEnrollment().getIsLab();
+            if (existing == null) {
+                gradeByCourseCode.put(courseCode, grade);
+            } else {
+                boolean existingTheory = existing.getEnrollment().getIsLab() == null || !existing.getEnrollment().getIsLab();
+                if (!existingTheory && isCurrentTheory) {
+                    gradeByCourseCode.put(courseCode, grade);
+                }
+            }
+        }
+
+        double weighted10 = 0;
+        double weighted4 = 0;
+        int gradedCredits = 0;
+        int passedCredits = 0;
+
+        for (Grade grade : gradeByCourseCode.values()) {
+            Integer credits = grade.getEnrollment().getCourse().getCredits();
+            if (credits == null || credits <= 0) continue;
+            weighted10 += grade.getFinalScore10() * credits;
+            weighted4 += grade.getFinalScore4() * credits;
+            gradedCredits += credits;
+            if ("Passed".equalsIgnoreCase(grade.getResult())) {
+                passedCredits += credits;
+            }
+        }
+
+        float gpa10 = gradedCredits == 0 ? 0f : round2(weighted10 / gradedCredits);
+        float gpa4 = gradedCredits == 0 ? 0f : round2(weighted4 / gradedCredits);
+
+        SemesterSummary summary = semesterSummaryRepository
+                .findByStudentAndSemester(student.getStudentCode(), academicYear, semester)
+                .orElseGet(SemesterSummary::new);
+        summary.setStudent(student);
+        summary.setAcademicYear(academicYear);
+        summary.setSemester(semester);
+        summary.setGpa10(gpa10);
+        summary.setGpa4(gpa4);
+        summary.setSemesterCredits(passedCredits);
+
+        SemesterSummary previous = findNearestPreviousSummary(student.getId(), academicYear, semester);
+        if (previous == null) {
+            summary.setCumulativeGpa10(gpa10);
+            summary.setCumulativeGpa4(gpa4);
+            summary.setCumulativeCredits(passedCredits);
+        } else {
+            int previousCredits = Optional.ofNullable(previous.getCumulativeCredits()).orElse(0);
+            int totalCredits = previousCredits + passedCredits;
+
+            if (totalCredits == 0) {
+                summary.setCumulativeGpa10(0f);
+                summary.setCumulativeGpa4(0f);
+            } else {
+                double cumulative10 = (Optional.ofNullable(previous.getCumulativeGpa10()).orElse(0f) * previousCredits
+                        + gpa10 * passedCredits) / totalCredits;
+                double cumulative4 = (Optional.ofNullable(previous.getCumulativeGpa4()).orElse(0f) * previousCredits
+                        + gpa4 * passedCredits) / totalCredits;
+                summary.setCumulativeGpa10(round2(cumulative10));
+                summary.setCumulativeGpa4(round2(cumulative4));
+            }
+            summary.setCumulativeCredits(totalCredits);
+        }
+
+        semesterSummaryRepository.save(summary);
+    }
+
+    private SemesterSummary findNearestPreviousSummary(Long studentId, String academicYear, String semester) {
+        List<SemesterSummary> all = semesterSummaryRepository.findAllByStudentId(studentId);
+        int currentOrder = termOrder(academicYear, semester);
+        SemesterSummary nearest = null;
+        int nearestOrder = Integer.MIN_VALUE;
+
+        for (SemesterSummary item : all) {
+            int itemOrder = termOrder(item.getAcademicYear(), item.getSemester());
+            if (itemOrder < currentOrder && itemOrder > nearestOrder) {
+                nearest = item;
+                nearestOrder = itemOrder;
+            }
+        }
+        return nearest;
+    }
+
+    private int termOrder(String academicYear, String semester) {
+        if (isBlank(academicYear) || isBlank(semester)) return Integer.MIN_VALUE;
+        int startYear;
+        try {
+            String[] years = academicYear.trim().split("-");
+            startYear = Integer.parseInt(years[0]);
+        } catch (Exception ex) {
+            startYear = 0;
+        }
+        int sem;
+        try {
+            sem = Integer.parseInt(semester.trim());
+        } catch (Exception ex) {
+            sem = 0;
+        }
+        return startYear * 10 + sem;
+    }
+
     private Map<String, Object> toGradeResponse(
             Grade grade,
             String studentCode,
@@ -361,6 +483,10 @@ public class AdminAcademicService {
 
     private float round1(float value) {
         return Math.round(value * 10f) / 10f;
+    }
+
+    private float round2(double value) {
+        return (float) (Math.round(value * 100.0) / 100.0);
     }
 
     private String getStringCell(Cell cell) {

@@ -5,6 +5,7 @@ import com.example.nlu.dto.request.LoginRequest;
 import com.example.nlu.dto.response.LoginResponse;
 import com.example.nlu.entity.Role;
 import com.example.nlu.entity.Student;
+import com.example.nlu.entity.StudentStatus;
 import com.example.nlu.entity.User;
 import com.example.nlu.jwt.JwtUtil;
 import com.example.nlu.repo.StudentRepository;
@@ -60,6 +61,11 @@ public class AuthService {
                     log.warn("Student not found for userId: {}", user.getId());
                     return new RuntimeException("Không tìm thấy thông tin sinh viên");
                 });
+
+        if (!student.getStatus().allowsLogin()) {
+            throw new RuntimeException("Tài khoản đang bị vô hiệu hóa");
+        }
+
         return new LoginResponse(token, student.getStudentCode(), student.getFullName(), user.getRole().name());
     }
 

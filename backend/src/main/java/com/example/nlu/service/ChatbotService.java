@@ -183,7 +183,7 @@ public class ChatbotService {
         sb.append("Tôn giáo: ").append(nvl(s.getReligion())).append("\n");
         sb.append("Quốc tịch: ").append(nvl(s.getNationality())).append("\n");
         sb.append("Nơi sinh: ").append(nvl(s.getPlaceOfBirth())).append("\n");
-        sb.append("Trạng thái: ").append(nvl(s.getStatus())).append("\n");
+        sb.append("Trạng thái: ").append(s.getStatus() != null ? s.getStatus().name() : "—").append("\n");
         spOpt.ifPresent(sp -> {
             sb.append("Khoa: ").append(nvl(sp.getProgram().getFaculty())).append("\n");
             sb.append("Ngành: ").append(nvl(sp.getProgram().getMajor())).append("\n");

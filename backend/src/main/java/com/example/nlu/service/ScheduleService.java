@@ -129,6 +129,7 @@ public class ScheduleService {
                 .periodEnd(times[1])
                 .enrollmentStartDate(e.getStartDate() != null ? e.getStartDate().toString() : null)
                 .enrollmentEndDate(e.getEndDate() != null ? e.getEndDate().toString() : null)
+                .isLab(Boolean.TRUE.equals(e.getIsLab()))
                 .build();
     }
 

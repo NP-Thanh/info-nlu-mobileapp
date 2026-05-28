@@ -20,4 +20,8 @@ public class UpdateStudentRequest {
     private Integer startYear;
     private Integer endYear;
     private String status;
+    private String email;
+
+    private Long programId;
+    private String className;
 }

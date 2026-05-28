@@ -33,7 +33,7 @@ public class StudentService {
         return StudentInfoResponse.builder()
                 .studentCode(s.getStudentCode())
                 .fullName(s.getFullName())
-                .status(s.getStatus())
+                .status(s.getStatus() != null ? s.getStatus().name() : null)
                 .dateOfBirth(s.getDateOfBirth() != null ? s.getDateOfBirth().format(DATE_FMT) : null)
                 .gender(s.getGender())
                 .phone(s.getPhone())

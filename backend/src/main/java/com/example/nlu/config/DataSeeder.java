@@ -70,7 +70,7 @@ public class DataSeeder implements CommandLineRunner {
         student.setPlaceOfBirth("TP. Hồ Chí Minh");
         student.setStartYear(2022);
         student.setEndYear(2026);
-        student.setStatus("Đang học");
+        student.setStatus(com.example.nlu.entity.StudentStatus.ACTIVE);
         studentRepository.save(student);
 
         // 4. StudentProgram

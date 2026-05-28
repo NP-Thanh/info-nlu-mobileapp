@@ -25,4 +25,21 @@ public interface StudentProgramRepository extends JpaRepository<StudentProgram, 
             @Param("className") String className,
             @Param("faculty") String faculty
     );
+
+    @Query("""
+        SELECT DISTINCT sp.className FROM StudentProgram sp
+        WHERE sp.className IS NOT NULL AND sp.className <> ''
+          AND (:keyword IS NULL OR :keyword = '' OR LOWER(sp.className) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        ORDER BY sp.className
+        """)
+    List<String> suggestClassNames(@Param("keyword") String keyword);
+
+    @Query("""
+        SELECT DISTINCT p.faculty FROM StudentProgram sp
+        JOIN sp.program p
+        WHERE p.faculty IS NOT NULL AND p.faculty <> ''
+          AND (:keyword IS NULL OR :keyword = '' OR LOWER(p.faculty) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        ORDER BY p.faculty
+        """)
+    List<String> suggestFaculties(@Param("keyword") String keyword);
 }

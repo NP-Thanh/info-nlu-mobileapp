@@ -45,5 +45,7 @@ public class Student {
     @Column(name = "end_year")
     private Integer endYear;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StudentStatus status = StudentStatus.ACTIVE;
 }
