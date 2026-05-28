@@ -53,11 +53,6 @@ class LoginNotifier extends StateNotifier<LoginState> {
       state = state.copyWith(errorMessage: 'Vui lòng nhập mật khẩu');
       return;
     }
-    if (!RegExp(r'^\d+$').hasMatch(studentId)) {
-      state = state.copyWith(errorMessage: 'Mã số sinh viên chỉ được chứa chữ số');
-      return;
-    }
-
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final data = await _repo.login(studentId, password);

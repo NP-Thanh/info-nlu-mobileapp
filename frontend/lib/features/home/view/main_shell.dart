@@ -8,7 +8,8 @@ import '../../notifications/providers/notification_provider.dart';
 import '../../../core/services/push_notification_service.dart';
 
 class MainShell extends ConsumerStatefulWidget {
-  const MainShell({super.key});
+  final String role;
+  const MainShell({super.key, required this.role});
 
   @override
   ConsumerState<MainShell> createState() => _MainShellState();

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/navigation/app_navigator.dart';
 import 'core/services/push_notification_service.dart';
 import 'features/auth/view/login_screen.dart';
+import 'features/home/view/main_shell.dart';
+import 'features/admin/view/admin_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +37,38 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Roboto',
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
       ),
-      home: const LoginScreen(),
+      home: const _AppEntryGate(),
+    );
+  }
+}
+
+class _AppEntryGate extends StatelessWidget {
+  const _AppEntryGate();
+
+  Future<Widget> _resolveHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final role = (prefs.getString('role') ?? '').toUpperCase();
+
+    if (token.isEmpty) return const LoginScreen();
+    if (role == 'ADMIN') return const AdminShell();
+    if (role == 'STUDENT') return const MainShell(role: 'STUDENT');
+    await prefs.clear();
+    return const LoginScreen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _resolveHome(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return snapshot.data!;
+      },
     );
   }
 }

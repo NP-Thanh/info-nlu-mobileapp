@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../providers/login_provider.dart';
 import '../../home/view/main_shell.dart';
+import '../../admin/view/admin_shell.dart';
 import '../../../core/services/push_notification_service.dart';
 import 'forgot_password_screen.dart';
 
@@ -16,6 +18,23 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _studentIdController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  Future<void> _navigateAfterLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = (prefs.getString('role') ?? '').toUpperCase();
+    if (!mounted) return;
+
+    if (role == 'ADMIN') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AdminShell()),
+      );
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MainShell(role: 'STUDENT')),
+    );
+  }
 
   @override
   void dispose() {
@@ -40,9 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (next.isSuccess) {
         ref.read(loginProvider.notifier).clearMessages();
         PushNotificationService.registerTokenWithBackend();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainShell()),
-        );
+        _navigateAfterLogin();
       } else if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -151,7 +168,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Mã số sinh viên',
+          'Mã đăng nhập',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -161,9 +178,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _studentIdController,
-          keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            hintText: 'Nhập mã số sinh viên',
+            hintText: 'Nhập mã đăng nhập',
             hintStyle: const TextStyle(color: AppColors.textSecondary),
             prefixIcon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
             filled: true,
