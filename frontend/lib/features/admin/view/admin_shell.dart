@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../widgets/admin_widgets.dart';
 import 'admin_students_screen.dart';
 import 'admin_academic_screen.dart';
 import 'admin_settings_screen.dart';
@@ -22,15 +23,24 @@ class _AdminShellState extends State<AdminShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: AppColors.primary,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          elevation: 0,
+          onTap: (index) => setState(() => _currentIndex = index),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings_outlined), activeIcon: Icon(Icons.admin_panel_settings), label: 'Quản trị'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Cài đặt'),
+          ],
+        ),
       ),
     );
   }
@@ -44,35 +54,28 @@ class _AdminMenuScreen extends StatelessWidget {
     final items = [
       _AdminMenuItem(
         title: 'Quản lý sinh viên',
+        subtitle: 'Danh sách, lọc, thêm/sửa/xóa',
         icon: Icons.people_alt_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminStudentsScreen())),
       ),
       _AdminMenuItem(
         title: 'Quản lý học thuật',
+        subtitle: 'Môn học, nhập điểm, import',
         icon: Icons.menu_book_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAcademicScreen())),
       ),
-      const _AdminMenuItem(title: 'Quản lý lịch học', icon: Icons.calendar_month_outlined),
-      const _AdminMenuItem(title: 'Quản lý chatbot', icon: Icons.smart_toy_outlined),
-      const _AdminMenuItem(title: 'Quản lý thông báo', icon: Icons.notifications_outlined),
-      _AdminMenuItem(
-        title: 'Cài đặt',
-        icon: Icons.settings_outlined,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSettingsScreen())),
-      ),
+      const _AdminMenuItem(title: 'Quản lý lịch học', subtitle: 'Sắp cập nhật', icon: Icons.calendar_month_outlined),
+      const _AdminMenuItem(title: 'Quản lý chatbot', subtitle: 'Sắp cập nhật', icon: Icons.smart_toy_outlined),
+      const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Sắp cập nhật', icon: Icons.notifications_outlined),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trang quản trị'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
+      appBar: AdminTheme.appBar(context, 'Trang quản trị'),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) => _MenuCard(item: items[index]),
       ),
     );
@@ -85,31 +88,44 @@ class _MenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap ?? () => _showComingSoon(context),
-      borderRadius: BorderRadius.circular(14),
-      child: Ink(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-              child: Icon(item.icon, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                item.title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: item.onTap ?? () => _showComingSoon(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Icon(item.icon, color: AppColors.primary),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    if (item.subtitle != null)
+                      Text(item.subtitle!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
         ),
       ),
     );
@@ -124,7 +140,8 @@ class _MenuCard extends StatelessWidget {
 
 class _AdminMenuItem {
   final String title;
+  final String? subtitle;
   final IconData icon;
   final VoidCallback? onTap;
-  const _AdminMenuItem({required this.title, required this.icon, this.onTap});
+  const _AdminMenuItem({required this.title, this.subtitle, required this.icon, this.onTap});
 }

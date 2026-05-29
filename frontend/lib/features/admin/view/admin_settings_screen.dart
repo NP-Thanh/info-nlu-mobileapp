@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../widgets/admin_widgets.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/view/change_password_screen.dart';
 import '../../auth/view/login_screen.dart';
@@ -51,21 +52,26 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cài đặt tài khoản')),
+      backgroundColor: Colors.white,
+      appBar: AdminTheme.appBar(context, 'Cài đặt tài khoản'),
       body: Stack(
         children: [
           ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
+              AdminTheme.infoCard(
                 child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(_fullName.isEmpty ? 'ADMIN' : _fullName),
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                    child: const Icon(Icons.person, color: AppColors.primary),
+                  ),
+                  title: Text(_fullName.isEmpty ? 'ADMIN' : _fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('Tài khoản: $_username'),
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
+              AdminTheme.infoCard(
                 child: Column(
                   children: [
                     ListTile(

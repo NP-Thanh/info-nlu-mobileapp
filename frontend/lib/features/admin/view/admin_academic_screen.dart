@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../data/admin_repository.dart';
+import '../widgets/admin_widgets.dart';
 
 class AdminAcademicScreen extends StatefulWidget {
   const AdminAcademicScreen({super.key});
@@ -247,16 +248,23 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Quản lý học thuật'),
+        title: const Text('Quản lý học thuật', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
           tabs: const [Tab(text: 'Môn học'), Tab(text: 'Điểm')],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openCourseForm(),
-        backgroundColor: _tabController.index == 0 ? AppColors.primary : Colors.grey,
+        backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: TabBarView(
@@ -342,7 +350,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen> with SingleTi
           onChanged: _searchStudentSuggestions,
         ),
         if (_studentSuggestions.isNotEmpty)
-          _SuggestionCard(
+          AdminSuggestionCardFromMaps(
             items: _studentSuggestions,
             query: _manualMssv.text,
             displayBuilder: (item) => '${item['studentCode']} - ${item['fullName']}',
@@ -390,7 +398,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen> with SingleTi
           onChanged: (value) => _loadCoursesForTerm(keyword: value),
         ),
         if (_courseOptions.isNotEmpty)
-          _SuggestionCard(
+          AdminSuggestionCardFromMaps(
             items: _courseOptions,
             query: _manualCourse.text,
             displayBuilder: (item) => item['display']?.toString() ?? '',
@@ -413,7 +421,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen> with SingleTi
           decoration: const InputDecoration(labelText: 'điểm thi'),
         ),
         const SizedBox(height: 12),
-        ElevatedButton(onPressed: _saveManualGrade, child: const Text('Lưu điểm')),
+        ElevatedButton(style: AdminTheme.primaryButtonStyle(), onPressed: _saveManualGrade, child: const Text('Lưu điểm', style: TextStyle(color: Colors.white))),
         const Divider(height: 32),
         const Text(
           'Import điểm theo file Excel (cột: mssv, academic_year, semester, điểm quá trình, điểm thi)',
@@ -448,68 +456,3 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen> with SingleTi
   }
 }
 
-class _SuggestionCard extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final String query;
-  final String Function(Map<String, dynamic>) displayBuilder;
-  final void Function(Map<String, dynamic>) onSelect;
-
-  const _SuggestionCard({
-    required this.items,
-    required this.query,
-    required this.displayBuilder,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(top: 6, bottom: 6),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 220),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            final text = displayBuilder(item);
-            return ListTile(
-              dense: true,
-              title: _HighlightedText(text: text, query: query),
-              onTap: () => onSelect(item),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _HighlightedText extends StatelessWidget {
-  final String text;
-  final String query;
-  const _HighlightedText({required this.text, required this.query});
-
-  @override
-  Widget build(BuildContext context) {
-    if (query.trim().isEmpty) return Text(text);
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-    final start = lowerText.indexOf(lowerQuery);
-    if (start < 0) return Text(text);
-    final end = start + lowerQuery.length;
-    return RichText(
-      text: TextSpan(
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-        children: [
-          TextSpan(text: text.substring(0, start)),
-          TextSpan(
-            text: text.substring(start, end),
-            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-          ),
-          TextSpan(text: text.substring(end)),
-        ],
-      ),
-    );
-  }
-}
