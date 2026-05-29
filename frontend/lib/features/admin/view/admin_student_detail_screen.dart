@@ -678,10 +678,54 @@ class _GradesTabState extends State<_GradesTab> {
           },
         ),
         if (!_loadingGrades) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('Điểm tổng kết', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 8),
           _SemesterSummaryText(summary: summary ?? const {}),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('Điểm các môn học', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(width: 8),
+              if (gradeItems.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    '${gradeItems.length} môn',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
         ],
-        const SizedBox(height: 16),
         if (_loadingGrades)
           const Center(child: CircularProgressIndicator(color: AppColors.primary))
         else if (gradeItems.isEmpty)
@@ -693,14 +737,20 @@ class _GradesTabState extends State<_GradesTab> {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -708,8 +758,8 @@ class _GradesTabState extends State<_GradesTab> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(g['courseName']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                              const SizedBox(height: 4),
+                              Text(g['courseName']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                              const SizedBox(height: 2),
                               Text('${g['courseCode']} · ${g['credits']} tín chỉ', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                             ],
                           ),
@@ -765,19 +815,62 @@ class _SemesterSummaryText extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Tổng kết học kỳ', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-          const SizedBox(height: 10),
-          Text(
-            'Điểm TB học kỳ (thang 10): ${_fmt(summary['gpa10'])}    ·    '
-            'Điểm TB học kỳ (thang 4): ${_fmt(summary['gpa4'])}    ·    '
-            'Tín chỉ học kỳ: ${_fmt(summary['semesterCredits'])}',
-            style: const TextStyle(fontSize: 13, height: 1.5),
+          const SizedBox(height: 12),
+          // Hàng 1: Điểm học kỳ
+          Row(
+            children: [
+              Expanded(child: _summaryItem('ĐTB HK (10)', _fmt(summary['gpa10']), highlight: true)),
+              const SizedBox(width: 8),
+              Expanded(child: _summaryItem('ĐTB HK (4)', _fmt(summary['gpa4']), highlight: true)),
+              const SizedBox(width: 8),
+              Expanded(child: _summaryItem('TC học kỳ', _fmt(summary['semesterCredits']))),
+            ],
           ),
           const SizedBox(height: 8),
+          // Hàng 2: Điểm tích lũy
+          Row(
+            children: [
+              Expanded(child: _summaryItem('ĐTB TL (10)', _fmt(summary['cumulativeGpa10']))),
+              const SizedBox(width: 8),
+              Expanded(child: _summaryItem('ĐTB TL (4)', _fmt(summary['cumulativeGpa4']))),
+              const SizedBox(width: 8),
+              Expanded(child: _summaryItem('TC tích lũy', _fmt(summary['cumulativeCredits']))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryItem(String label, String value, {bool highlight = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: highlight ? AppColors.primary.withValues(alpha: 0.08) : AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: highlight ? AppColors.primary.withValues(alpha: 0.25) : AppColors.border,
+        ),
+      ),
+      child: Column(
+        children: [
           Text(
-            'Điểm TB tích lũy (thang 10): ${_fmt(summary['cumulativeGpa10'])}    ·    '
-            'Điểm TB tích lũy (thang 4): ${_fmt(summary['cumulativeGpa4'])}    ·    '
-            'Tín chỉ tích lũy: ${_fmt(summary['cumulativeCredits'])}',
-            style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary),
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: highlight ? AppColors.primary : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: highlight ? AppColors.primary : AppColors.textPrimary,
+            ),
           ),
         ],
       ),

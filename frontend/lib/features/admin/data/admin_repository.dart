@@ -194,4 +194,26 @@ class AdminRepository {
     final response = await _dio.post('/admin/grades/import', data: formData);
     return Map<String, dynamic>.from(response.data as Map);
   }
+
+  // ── Admin Users ─────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAdminUsers({String? keyword}) async {
+    final response = await _dio.get(
+      '/admin/users',
+      queryParameters: {
+        if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+      },
+    );
+    final data = (response.data as Map<String, dynamic>)['data'] as List<dynamic>? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> createAdminUser({required String username, required String email}) async {
+    final response = await _dio.post('/admin/users', data: {'username': username, 'email': email});
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<void> deleteAdminUsers(List<int> ids) async {
+    await _dio.delete('/admin/users', data: {'ids': ids});
+  }
 }

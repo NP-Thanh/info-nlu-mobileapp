@@ -28,6 +28,7 @@ public class AdminController {
     private final AdminProgramService adminProgramService;
     private final AdminScheduleService adminScheduleService;
     private final GradeService gradeService;
+    private final AdminUserService adminUserService;
 
     @GetMapping("/students")
     @PreAuthorize("hasRole('ADMIN')")
@@ -375,6 +376,47 @@ public class AdminController {
         try {
             Map<String, Object> result = adminAcademicService.importGrades(courseCode, file);
             return ResponseEntity.ok(Map.of("message", "Import điểm hoàn tất", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Quản lý tài khoản Admin ──────────────────────────────────────────────
+
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminUsers(@RequestParam(required = false) String keyword) {
+        try {
+            var list = adminUserService.getAdminUsers(keyword);
+            return ResponseEntity.ok(Map.of("total", list.size(), "data", list));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> createAdminUser(@RequestBody Map<String, String> request) {
+        try {
+            var result = adminUserService.createAdminUser(request.get("username"), request.get("email"));
+            return ResponseEntity.ok(Map.of("message", "Tạo tài khoản thành công, mật khẩu đã gửi qua email", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteAdminUsers(@RequestBody Map<String, List<Long>> request) {
+        try {
+            adminUserService.deleteAdminUsers(request.get("ids"));
+            return ResponseEntity.ok(Map.of("message", "Xóa tài khoản thành công"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {

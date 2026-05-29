@@ -4,6 +4,7 @@ import '../widgets/admin_widgets.dart';
 import 'admin_students_screen.dart';
 import 'admin_academic_screen.dart';
 import 'admin_settings_screen.dart';
+import 'admin_users_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -53,20 +54,26 @@ class _AdminMenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _AdminMenuItem(
+        title: 'Quản lý tài khoản Admin',
+        subtitle: 'Thêm, tìm kiếm, xóa tài khoản admin',
+        icon: Icons.manage_accounts_outlined,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
+      ),
+      _AdminMenuItem(
         title: 'Quản lý sinh viên',
-        subtitle: 'Danh sách, lọc, thêm/sửa/xóa',
+        subtitle: 'Danh sách sinh viên NLU',
         icon: Icons.people_alt_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminStudentsScreen())),
       ),
       _AdminMenuItem(
         title: 'Quản lý học thuật',
-        subtitle: 'Môn học, nhập điểm, import',
+        subtitle: 'Môn học - Nhập điểm',
         icon: Icons.menu_book_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAcademicScreen())),
       ),
-      const _AdminMenuItem(title: 'Quản lý lịch học', subtitle: 'Sắp cập nhật', icon: Icons.calendar_month_outlined),
-      const _AdminMenuItem(title: 'Quản lý chatbot', subtitle: 'Sắp cập nhật', icon: Icons.smart_toy_outlined),
-      const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Sắp cập nhật', icon: Icons.notifications_outlined),
+      const _AdminMenuItem(title: 'Quản lý lịch học', subtitle: 'Xếp lịch học', icon: Icons.calendar_month_outlined),
+      const _AdminMenuItem(title: 'Quản lý chatbot', subtitle: 'Lịch sử chat', icon: Icons.smart_toy_outlined),
+      const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Gửi thông báo', icon: Icons.notifications_outlined),
     ];
 
     return Scaffold(
