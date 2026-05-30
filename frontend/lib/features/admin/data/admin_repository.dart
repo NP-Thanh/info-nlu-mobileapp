@@ -137,6 +137,14 @@ class AdminRepository {
     await _dio.delete('/admin/courses/$id');
   }
 
+  Future<Map<String, dynamic>> previewCourses(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/courses/preview', data: formData);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
   Future<Map<String, dynamic>> importCourses(String filePath) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
@@ -181,6 +189,18 @@ class AdminRepository {
     );
     final data = (response.data as Map<String, dynamic>)['data'] as List<dynamic>? ?? [];
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> previewGrades({
+    required String courseCode,
+    required String filePath,
+  }) async {
+    final formData = FormData.fromMap({
+      'course_code': courseCode,
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/grades/preview', data: formData);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
   }
 
   Future<Map<String, dynamic>> importGrades({

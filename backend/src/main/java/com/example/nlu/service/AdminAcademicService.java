@@ -72,6 +72,133 @@ public class AdminAcademicService {
         courseRepository.delete(course);
     }
 
+    public Map<String, Object> previewCourses(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File excel không được để trống");
+        }
+        List<Map<String, Object>> validRows = new ArrayList<>();
+        List<Map<String, Object>> invalidRows = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) throw new IllegalArgumentException("Không có sheet dữ liệu");
+            validateHeader(sheet, new String[]{"course_code", "name", "credits"});
+
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null) continue;
+                String courseCode = getStringCell(row.getCell(0));
+                String name = getStringCell(row.getCell(1));
+                Integer credits = null;
+                try { credits = getIntCell(row.getCell(2)); } catch (Exception ignored) {}
+
+                Map<String, Object> rowData = new LinkedHashMap<>();
+                rowData.put("row", rowIndex + 1);
+                rowData.put("courseCode", courseCode);
+                rowData.put("courseName", name);
+                rowData.put("credits", credits);
+
+                try {
+                    validateCourseInput(courseCode, name, credits);
+                    rowData.put("valid", true);
+                    rowData.put("error", null);
+                    validRows.add(rowData);
+                } catch (Exception e) {
+                    rowData.put("valid", false);
+                    rowData.put("error", e.getMessage());
+                    invalidRows.add(rowData);
+                }
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Không đọc được file excel");
+        } catch (Exception e) {
+            throw new IllegalArgumentException("File excel không hợp lệ: " + e.getMessage());
+        }
+
+        List<Map<String, Object>> allRows = new ArrayList<>();
+        allRows.addAll(validRows);
+        allRows.addAll(invalidRows);
+        allRows.sort(Comparator.comparingInt(r -> (int) r.get("row")));
+
+        return Map.of(
+                "validCount", validRows.size(),
+                "invalidCount", invalidRows.size(),
+                "rows", allRows
+        );
+    }
+
+    public Map<String, Object> previewGrades(String courseCode, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File excel không được để trống");
+        }
+        if (isBlank(courseCode)) {
+            throw new IllegalArgumentException("course_code không được để trống");
+        }
+        // Validate course exists
+        getCourseByCode(courseCode);
+
+        List<Map<String, Object>> validRows = new ArrayList<>();
+        List<Map<String, Object>> invalidRows = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) throw new IllegalArgumentException("Không có sheet dữ liệu");
+            validateHeader(sheet, new String[]{"mssv", "academic_year", "semester", "process_score", "exam_score"});
+
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null) continue;
+
+                String studentCode = getStringCell(row.getCell(0));
+                String academicYear = getStringCell(row.getCell(1));
+                String semester = getStringCell(row.getCell(2));
+                Float processScore = null;
+                Float examScore = null;
+                try { processScore = getFloatCell(row.getCell(3)); } catch (Exception ignored) {}
+                try { examScore = getFloatCell(row.getCell(4)); } catch (Exception ignored) {}
+
+                Map<String, Object> rowData = new LinkedHashMap<>();
+                rowData.put("row", rowIndex + 1);
+                rowData.put("studentCode", studentCode);
+                rowData.put("academicYear", academicYear);
+                rowData.put("semester", semester);
+                rowData.put("processScore", processScore);
+                rowData.put("examScore", examScore);
+
+                try {
+                    if (isBlank(studentCode)) throw new IllegalArgumentException("MSSV trống");
+                    validateTerm(academicYear, semester);
+                    validateScore(processScore, "Điểm quá trình");
+                    validateScore(examScore, "Điểm thi");
+                    // Check student exists
+                    getStudentByCode(studentCode);
+                    rowData.put("valid", true);
+                    rowData.put("error", null);
+                    validRows.add(rowData);
+                } catch (Exception e) {
+                    rowData.put("valid", false);
+                    rowData.put("error", e.getMessage());
+                    invalidRows.add(rowData);
+                }
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Không đọc được file excel");
+        } catch (Exception e) {
+            throw new IllegalArgumentException("File excel không hợp lệ: " + e.getMessage());
+        }
+
+        List<Map<String, Object>> allRows = new ArrayList<>();
+        allRows.addAll(validRows);
+        allRows.addAll(invalidRows);
+        allRows.sort(Comparator.comparingInt(r -> (int) r.get("row")));
+
+        return Map.of(
+                "validCount", validRows.size(),
+                "invalidCount", invalidRows.size(),
+                "rows", allRows
+        );
+    }
+
     @Transactional
     public Map<String, Object> importCourses(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -86,6 +213,7 @@ public class AdminAcademicService {
             if (sheet == null) {
                 throw new IllegalArgumentException("Không có sheet dữ liệu");
             }
+            validateHeader(sheet, new String[]{"course_code", "name", "credits"});
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
@@ -163,6 +291,7 @@ public class AdminAcademicService {
             if (sheet == null) {
                 throw new IllegalArgumentException("Không có sheet dữ liệu");
             }
+            validateHeader(sheet, new String[]{"mssv", "academic_year", "semester", "process_score", "exam_score"});
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
@@ -523,5 +652,30 @@ public class AdminAcademicService {
 
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    /**
+     * Validates that the header row of a sheet matches the expected column names (case-insensitive, trimmed).
+     * Throws IllegalArgumentException with a descriptive message if the header doesn't match.
+     */
+    private void validateHeader(Sheet sheet, String[] expectedHeaders) {
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            throw new IllegalArgumentException(
+                "File thiếu dòng header. Dòng đầu tiên phải là: " + String.join(" | ", expectedHeaders)
+            );
+        }
+        for (int i = 0; i < expectedHeaders.length; i++) {
+            Cell cell = headerRow.getCell(i);
+            String actual = cell == null ? "" : getStringCell(cell);
+            String expected = expectedHeaders[i];
+            if (actual == null || !actual.trim().equalsIgnoreCase(expected)) {
+                throw new IllegalArgumentException(
+                    "Header không đúng định dạng. Cột " + (i + 1) + " phải là \"" + expected
+                    + "\" nhưng nhận được \"" + (actual == null ? "(trống)" : actual.trim()) + "\". "
+                    + "Header yêu cầu: " + String.join(" | ", expectedHeaders)
+                );
+            }
+        }
     }
 }

@@ -299,6 +299,19 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/courses/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> previewCourses(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = adminAcademicService.previewCourses(file);
+            return ResponseEntity.ok(Map.of("data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/courses/import")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> importCourses(@RequestParam("file") MultipartFile file) {
@@ -366,6 +379,20 @@ public class AdminController {
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/grades/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> previewGrades(@RequestParam("course_code") String courseCode,
+                                           @RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = adminAcademicService.previewGrades(courseCode, file);
+            return ResponseEntity.ok(Map.of("data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
         }
     }
 
