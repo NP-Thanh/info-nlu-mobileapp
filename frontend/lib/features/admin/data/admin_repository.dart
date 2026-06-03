@@ -215,6 +215,81 @@ class AdminRepository {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  // ── Admin Schedules ──────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAdminSchedules({
+    String? keyword,
+    String? semester,
+    String? academicYear,
+  }) async {
+    final response = await _dio.get('/admin/schedules', queryParameters: {
+      if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+      if (semester != null && semester.trim().isNotEmpty) 'semester': semester.trim(),
+      if (academicYear != null && academicYear.trim().isNotEmpty) 'academicYear': academicYear.trim(),
+    });
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<List<String>> getScheduleAcademicYears() async {
+    final response = await _dio.get('/admin/schedules/academic-years');
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => e.toString()).toList();
+  }
+
+  Future<Map<String, dynamic>> getAdminScheduleDetail(int scheduleId) async {
+    final response = await _dio.get('/admin/schedules/$scheduleId');
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> createAdminSchedule(Map<String, dynamic> payload) async {
+    final response = await _dio.post('/admin/schedules', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> updateAdminSchedule(int id, Map<String, dynamic> payload) async {
+    final response = await _dio.put('/admin/schedules/$id', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<void> softDeleteAdminSchedule(int id) async {
+    await _dio.delete('/admin/schedules/$id');
+  }
+
+  Future<void> softDeleteAdminSchedulesBulk(List<int> ids) async {
+    await _dio.delete('/admin/schedules', data: {'ids': ids});
+  }
+
+  Future<Map<String, dynamic>> updateScheduleStudents(int scheduleId, List<int> studentIds) async {
+    final response = await _dio.put('/admin/schedules/$scheduleId/students',
+        data: {'studentIds': studentIds});
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> previewScheduleExcel(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/schedules/preview', data: formData);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> importScheduleExcel(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/schedules/import', data: formData);
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<List<Map<String, dynamic>>> getAllStudentsForSchedule({String? keyword}) async {
+    final response = await _dio.get('/admin/students', queryParameters: {
+      if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+    });
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   // ── Admin Users ─────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getAdminUsers({String? keyword}) async {

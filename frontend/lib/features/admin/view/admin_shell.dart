@@ -5,6 +5,7 @@ import 'admin_students_screen.dart';
 import 'admin_academic_screen.dart';
 import 'admin_settings_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_schedule_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -71,7 +72,12 @@ class _AdminMenuScreen extends StatelessWidget {
         icon: Icons.menu_book_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAcademicScreen())),
       ),
-      const _AdminMenuItem(title: 'Quản lý lịch học', subtitle: 'Xếp lịch học', icon: Icons.calendar_month_outlined),
+      _AdminMenuItem(
+        title: 'Quản lý lịch học',
+        subtitle: 'Xếp lịch học',
+        icon: Icons.calendar_month_outlined,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminScheduleScreen())),
+      ),
       const _AdminMenuItem(title: 'Quản lý chatbot', subtitle: 'Lịch sử chat', icon: Icons.smart_toy_outlined),
       const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Gửi thông báo', icon: Icons.notifications_outlined),
     ];
