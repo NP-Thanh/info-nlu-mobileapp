@@ -14,9 +14,9 @@ public class Grade {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "enrollment_id")
-    private Enrollment enrollment;
+    @ManyToOne
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     @Column(name = "process_score")
     private Float processScore;

@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
-
 @Entity
 @Table(name = "schedules")
 @Getter
@@ -17,8 +15,8 @@ public class Schedule {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "enrollment_id")
-    private Enrollment enrollment;
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     private String room;
     private String lecturer;
@@ -31,4 +29,8 @@ public class Schedule {
      * Ca học: 1=07:00-09:15, 2=09:30-11:45, 3=12:30-14:45, 4=15:00-17:15
      */
     private Integer period;
+
+    /** Soft delete flag */
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

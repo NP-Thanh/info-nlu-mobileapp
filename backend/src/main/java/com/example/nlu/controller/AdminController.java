@@ -4,6 +4,8 @@ import com.example.nlu.dto.request.CreateStudentRequest;
 import com.example.nlu.dto.request.StudentIdsRequest;
 import com.example.nlu.dto.request.UpdateScheduleRequest;
 import com.example.nlu.dto.request.UpdateStudentRequest;
+import com.example.nlu.dto.request.CreateScheduleRequest;
+import com.example.nlu.dto.request.UpdateScheduleAdminRequest;
 import com.example.nlu.dto.response.AdminStudentResponse;
 import com.example.nlu.dto.response.GradeResponse;
 import com.example.nlu.entity.Course;
@@ -172,7 +174,56 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStudentLatestSchedule(@PathVariable Long id) {
         try {
-            return ResponseEntity.ok(Map.of("data", adminScheduleService.getLatestSchedule(id)));
+            return ResponseEntity.ok(Map.of("data", adminScheduleService.getScheduleService().getLatestSchedule(
+                    studentRepository(id))));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Admin Schedule Management ────────────────────────────────────────────
+
+    @GetMapping("/schedules")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminSchedules(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String semester,
+            @RequestParam(required = false) String academicYear
+    ) {
+        try {
+            var list = adminScheduleService.getSchedules(keyword, semester, academicYear);
+            return ResponseEntity.ok(Map.of("total", list.size(), "data", list));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/schedules/academic-years")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getScheduleAcademicYears() {
+        return ResponseEntity.ok(Map.of("data", adminScheduleService.getDistinctAcademicYears()));
+    }
+
+    @GetMapping("/schedules/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminScheduleDetail(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminScheduleService.getScheduleDetail(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/schedules")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> createAdminSchedule(@RequestBody CreateScheduleRequest request) {
+        try {
+            var result = adminScheduleService.createSchedule(request);
+            return ResponseEntity.ok(Map.of("message", "Thêm lịch học thành công", "data", result));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
@@ -182,7 +233,8 @@ public class AdminController {
 
     @PutMapping("/schedules/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateSchedule(@PathVariable Long id, @RequestBody UpdateScheduleRequest request) {
+    public ResponseEntity<?> updateAdminSchedule(@PathVariable Long id,
+                                                  @RequestBody UpdateScheduleAdminRequest request) {
         try {
             return ResponseEntity.ok(Map.of(
                     "message", "Cập nhật lịch học thành công",
@@ -197,15 +249,71 @@ public class AdminController {
 
     @DeleteMapping("/schedules/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteSchedule(@PathVariable Long id) {
+    public ResponseEntity<?> softDeleteSchedule(@PathVariable Long id) {
         try {
-            adminScheduleService.deleteSchedule(id);
+            adminScheduleService.softDeleteSchedule(id);
             return ResponseEntity.ok(Map.of("message", "Xóa lịch học thành công"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
         }
+    }
+
+    @DeleteMapping("/schedules")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> softDeleteSchedulesBulk(@RequestBody Map<String, List<Long>> request) {
+        try {
+            int count = adminScheduleService.softDeleteSchedulesBulk(request.get("ids"));
+            return ResponseEntity.ok(Map.of("message", "Đã xóa " + count + " lịch học"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/schedules/{id}/students")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateScheduleStudents(@PathVariable Long id,
+                                                     @RequestBody Map<String, List<Long>> request) {
+        try {
+            var result = adminScheduleService.updateStudentsInSchedule(id, request.get("studentIds"));
+            return ResponseEntity.ok(Map.of("message", "Cập nhật danh sách sinh viên thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/schedules/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> previewSchedules(@RequestParam("file") MultipartFile file) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminScheduleService.previewScheduleExcel(file)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/schedules/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> importSchedules(@RequestParam("file") MultipartFile file) {
+        try {
+            var result = adminScheduleService.importScheduleExcel(file);
+            return ResponseEntity.ok(Map.of("message", "Import lịch học hoàn tất", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    private String studentRepository(Long id) {
+        return adminStudentService.getStudentDetail(id).getStudentCode();
     }
 
     @GetMapping("/students/{id}/grades/semesters")

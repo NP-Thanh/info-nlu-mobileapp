@@ -4,10 +4,12 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
-
+/**
+ * Đăng ký học của sinh viên vào một section (nhóm học phần).
+ */
 @Entity
-@Table(name = "enrollments")
+@Table(name = "enrollments",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "section_id"}))
 @Getter
 @Setter
 public class Enrollment {
@@ -17,30 +19,10 @@ public class Enrollment {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
     @ManyToOne
-    @JoinColumn(name = "course_id")
-    private Course course;
-
-    /** Học kỳ: "1", "2", "3" */
-    private String semester;
-
-    /** Năm học: "2023-2024" */
-    @Column(name = "academic_year")
-    private String academicYear;
-
-    /** Ngày bắt đầu học kỳ */
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    /** Ngày kết thúc học kỳ */
-    @Column(name = "end_date")
-    private LocalDate endDate;
-
-    private Integer attempt;
-
-    @Column(name = "is_lab")
-    private Boolean isLab = false;
+    @JoinColumn(name = "section_id", nullable = false)
+    private Section section;
 }

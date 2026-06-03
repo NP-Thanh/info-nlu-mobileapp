@@ -4,8 +4,9 @@ import com.example.nlu.dto.response.ScheduleItemResponse;
 import com.example.nlu.dto.response.ScheduleResponse;
 import com.example.nlu.entity.Enrollment;
 import com.example.nlu.entity.Schedule;
-import com.example.nlu.repo.EnrollmentRepository;
+import com.example.nlu.entity.Section;
 import com.example.nlu.repo.ScheduleRepository;
+import com.example.nlu.repo.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +22,11 @@ public class ScheduleService {
     private final EnrollmentRepository enrollmentRepository;
     private final ScheduleRepository scheduleRepository;
 
-    // Ca học cố định
     private static final Map<Integer, String[]> PERIOD_TIMES = Map.of(
         1, new String[]{"07:00", "09:15"},
         2, new String[]{"09:30", "11:45"},
-        3, new String[]{"12:30", "14:30"},
-        4, new String[]{"14:45", "17:00"}
+        3, new String[]{"12:30", "14:45"},
+        4, new String[]{"15:00", "17:15"}
     );
 
     /** Lấy TKB học kỳ mới nhất của sinh viên */
@@ -34,13 +34,11 @@ public class ScheduleService {
         List<Enrollment> all = enrollmentRepository.findAllByStudentCode(studentCode);
         if (all.isEmpty()) return emptyResponse(null, null);
 
-        // Tìm học kỳ mới nhất theo academicYear DESC, semester DESC
         Enrollment latest = all.stream()
-                .max(Comparator.comparing(Enrollment::getAcademicYear)
-                        .thenComparing(Enrollment::getSemester))
+                .max(Comparator.comparing(e -> e.getSection().getAcademicYear() + "|" + e.getSection().getSemester()))
                 .orElseThrow();
 
-        return getSchedule(studentCode, latest.getAcademicYear(), latest.getSemester());
+        return getSchedule(studentCode, latest.getSection().getAcademicYear(), latest.getSection().getSemester());
     }
 
     /** Lấy TKB theo học kỳ cụ thể */
@@ -50,18 +48,16 @@ public class ScheduleService {
 
         if (enrollments.isEmpty()) return emptyResponse(academicYear, semester);
 
-        // startDate/endDate lấy từ enrollment
         LocalDate startDate = enrollments.stream()
-                .map(Enrollment::getStartDate).filter(Objects::nonNull)
+                .map(e -> e.getSection().getStartDate()).filter(Objects::nonNull)
                 .min(Comparator.naturalOrder()).orElse(null);
         LocalDate endDate = enrollments.stream()
-                .map(Enrollment::getEndDate).filter(Objects::nonNull)
+                .map(e -> e.getSection().getEndDate()).filter(Objects::nonNull)
                 .max(Comparator.naturalOrder()).orElse(null);
 
-        // Lấy schedules theo enrollment ids
-        List<Long> enrollmentIds = enrollments.stream()
-                .map(Enrollment::getId).collect(Collectors.toList());
-        List<Schedule> schedules = scheduleRepository.findByEnrollmentIds(enrollmentIds);
+        List<Long> sectionIds = enrollments.stream()
+                .map(e -> e.getSection().getId()).collect(Collectors.toList());
+        List<Schedule> schedules = scheduleRepository.findBySectionIds(sectionIds);
 
         List<ScheduleItemResponse> items = schedules.stream()
                 .sorted(Comparator.comparingInt(Schedule::getDayOfWeek)
@@ -84,7 +80,7 @@ public class ScheduleService {
 
         return all.stream()
                 .collect(Collectors.groupingBy(
-                        e -> e.getAcademicYear() + "|" + e.getSemester()))
+                        e -> e.getSection().getAcademicYear() + "|" + e.getSection().getSemester()))
                 .entrySet().stream()
                 .sorted((a, b) -> b.getKey().compareTo(a.getKey()))
                 .map(entry -> {
@@ -92,13 +88,13 @@ public class ScheduleService {
                     String ay = parts[0], sem = parts[1];
                     List<Enrollment> group = entry.getValue();
 
-                    LocalDate sd = group.stream().map(Enrollment::getStartDate)
+                    LocalDate sd = group.stream().map(e -> e.getSection().getStartDate())
                             .filter(Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
-                    LocalDate ed = group.stream().map(Enrollment::getEndDate)
+                    LocalDate ed = group.stream().map(e -> e.getSection().getEndDate())
                             .filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
 
-                    List<Long> ids = group.stream().map(Enrollment::getId).collect(Collectors.toList());
-                    List<ScheduleItemResponse> items = scheduleRepository.findByEnrollmentIds(ids)
+                    List<Long> ids = group.stream().map(e -> e.getSection().getId()).collect(Collectors.toList());
+                    List<ScheduleItemResponse> items = scheduleRepository.findBySectionIds(ids)
                             .stream()
                             .sorted(Comparator.comparingInt(Schedule::getDayOfWeek)
                                     .thenComparingInt(Schedule::getPeriod))
@@ -115,21 +111,21 @@ public class ScheduleService {
 
     private ScheduleItemResponse toItemResponse(Schedule s) {
         String[] times = PERIOD_TIMES.getOrDefault(s.getPeriod(), new String[]{"07:00", "09:15"});
-        Enrollment e = s.getEnrollment();
+        Section sec = s.getSection();
         return ScheduleItemResponse.builder()
                 .scheduleId(s.getId())
-                .courseName(e.getCourse().getCourseName())
-                .courseCode(e.getCourse().getCourseCode())
-                .credits(e.getCourse().getCredits())
+                .courseName(sec.getCourse().getCourseName())
+                .courseCode(sec.getCourse().getCourseCode())
+                .credits(sec.getCourse().getCredits())
                 .lecturer(s.getLecturer())
                 .room(s.getRoom())
                 .dayOfWeek(s.getDayOfWeek())
                 .period(s.getPeriod())
                 .periodStart(times[0])
                 .periodEnd(times[1])
-                .enrollmentStartDate(e.getStartDate() != null ? e.getStartDate().toString() : null)
-                .enrollmentEndDate(e.getEndDate() != null ? e.getEndDate().toString() : null)
-                .isLab(Boolean.TRUE.equals(e.getIsLab()))
+                .enrollmentStartDate(sec.getStartDate() != null ? sec.getStartDate().toString() : null)
+                .enrollmentEndDate(sec.getEndDate() != null ? sec.getEndDate().toString() : null)
+                .isLab(Boolean.TRUE.equals(sec.getIsLab()))
                 .build();
     }
 
@@ -140,7 +136,7 @@ public class ScheduleService {
                 .items(List.of()).build();
     }
 
-    /** Thông báo lịch học trong ngày (dùng cho push 7h sáng). */
+    /** Thông báo lịch học trong ngày */
     public DailyScheduleMessage buildDailyScheduleMessage(String studentCode, LocalDate today) {
         ScheduleResponse schedule = getLatestSchedule(studentCode);
         int dayOfWeek = toScheduleDayOfWeek(today);

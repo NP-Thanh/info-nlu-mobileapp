@@ -13,9 +13,7 @@ import com.example.nlu.repo.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -43,33 +41,27 @@ public class GradeService {
         studentRepository.findByStudentCode(studentCode)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
-        // Lấy tất cả enrollment của học kỳ
-        List<Enrollment> enrollments = enrollmentRepository
-                .findByStudentAndSemester(studentCode, academicYear, semester);
+        List<Enrollment> enrollments =
+                enrollmentRepository.findByStudentAndSemester(studentCode, academicYear, semester);
 
-        // Lấy grades hiện có
-        List<Grade> grades = gradeRepository
-                .findByStudentAndSemester(studentCode, academicYear, semester);
+        List<Grade> grades = gradeRepository.findByStudentAndSemester(studentCode, academicYear, semester);
 
-        Map<Long, Grade> gradeByEnrollmentId = new java.util.HashMap<>();
+        Map<Long, Grade> gradeBySectionId = new HashMap<>();
         for (Grade g : grades) {
-            gradeByEnrollmentId.put(g.getEnrollment().getId(), g);
+            gradeBySectionId.put(g.getSection().getId(), g);
         }
 
-        // Gộp các enrollment cùng courseCode (LT + TH) thành 1 dòng
-        // Ưu tiên enrollment đã có điểm; nếu cả 2 đều có điểm thì lấy điểm cao hơn
-        Map<String, GradeItemResponse> itemByCode = new java.util.LinkedHashMap<>();
-        for (Enrollment e : enrollments) {
-            String code = e.getCourse().getCourseCode();
-            Grade g = gradeByEnrollmentId.get(e.getId());
+        Map<String, GradeItemResponse> itemByCode = new LinkedHashMap<>();
+        for (Enrollment enrollment : enrollments) {
+            String code = enrollment.getSection().getCourse().getCourseCode();
+            Grade g = gradeBySectionId.get(enrollment.getSection().getId());
 
             GradeItemResponse existing = itemByCode.get(code);
             if (existing == null) {
-                // Chưa có → thêm mới
                 itemByCode.put(code, GradeItemResponse.builder()
                         .courseCode(code)
-                        .courseName(e.getCourse().getCourseName())
-                        .credits(e.getCourse().getCredits())
+                        .courseName(enrollment.getSection().getCourse().getCourseName())
+                        .credits(enrollment.getSection().getCourse().getCredits())
                         .processScore(g != null ? g.getProcessScore() : null)
                         .examScore(g != null ? g.getExamScore() : null)
                         .finalScore10(g != null ? g.getFinalScore10() : null)
@@ -77,7 +69,6 @@ public class GradeService {
                         .result(g != null ? g.getResult() : null)
                         .build());
             } else if (g != null) {
-                // Đã có nhưng enrollment này có điểm → ghi đè nếu điểm cao hơn hoặc existing chưa có điểm
                 boolean existingHasScore = existing.getFinalScore10() != null;
                 boolean newIsHigher = existingHasScore
                         && g.getFinalScore10() != null
@@ -85,8 +76,8 @@ public class GradeService {
                 if (!existingHasScore || newIsHigher) {
                     itemByCode.put(code, GradeItemResponse.builder()
                             .courseCode(code)
-                            .courseName(e.getCourse().getCourseName())
-                            .credits(e.getCourse().getCredits())
+                            .courseName(enrollment.getSection().getCourse().getCourseName())
+                            .credits(enrollment.getSection().getCourse().getCredits())
                             .processScore(g.getProcessScore())
                             .examScore(g.getExamScore())
                             .finalScore10(g.getFinalScore10())
@@ -100,7 +91,7 @@ public class GradeService {
         return GradeResponse.builder()
                 .semester(semester)
                 .academicYear(academicYear)
-                .grades(new java.util.ArrayList<>(itemByCode.values()))
+                .grades(new ArrayList<>(itemByCode.values()))
                 .build();
     }
 
@@ -108,27 +99,20 @@ public class GradeService {
         studentRepository.findByStudentCode(studentCode)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
-        // Trả về empty summary nếu chưa có dữ liệu
         Optional<SemesterSummary> opt = semesterSummaryRepository
                 .findByStudentAndSemester(studentCode, academicYear, semester);
 
         if (opt.isEmpty()) {
             return SemesterSummaryResponse.builder()
-                    .semester(semester)
-                    .academicYear(academicYear)
-                    .build();
+                    .semester(semester).academicYear(academicYear).build();
         }
 
         SemesterSummary ss = opt.get();
         return SemesterSummaryResponse.builder()
-                .semester(ss.getSemester())
-                .academicYear(ss.getAcademicYear())
-                .gpa10(ss.getGpa10())
-                .gpa4(ss.getGpa4())
-                .cumulativeGpa10(ss.getCumulativeGpa10())
-                .cumulativeGpa4(ss.getCumulativeGpa4())
-                .semesterCredits(ss.getSemesterCredits())
-                .cumulativeCredits(ss.getCumulativeCredits())
+                .semester(ss.getSemester()).academicYear(ss.getAcademicYear())
+                .gpa10(ss.getGpa10()).gpa4(ss.getGpa4())
+                .cumulativeGpa10(ss.getCumulativeGpa10()).cumulativeGpa4(ss.getCumulativeGpa4())
+                .semesterCredits(ss.getSemesterCredits()).cumulativeCredits(ss.getCumulativeCredits())
                 .build();
     }
 }

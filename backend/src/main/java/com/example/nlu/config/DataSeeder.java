@@ -24,6 +24,7 @@ public class DataSeeder implements CommandLineRunner {
     private final StudentProgramRepository studentProgramRepository;
     private final PasswordEncoder passwordEncoder;
     private final CourseRepository courseRepository;
+    private final SectionRepository sectionRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ScheduleRepository scheduleRepository;
     private final GradeRepository gradeRepository;
@@ -70,7 +71,7 @@ public class DataSeeder implements CommandLineRunner {
         student.setPlaceOfBirth("TP. Hồ Chí Minh");
         student.setStartYear(2022);
         student.setEndYear(2026);
-        student.setStatus(com.example.nlu.entity.StudentStatus.ACTIVE);
+        student.setStatus(StudentStatus.ACTIVE);
         studentRepository.save(student);
 
         // 4. StudentProgram
@@ -88,11 +89,10 @@ public class DataSeeder implements CommandLineRunner {
         // 6. Seed điểm và tổng kết học kỳ
         seedGradesAndSummaries(student);
 
-        log.info("Seeded student 22130259 - Nguyễn Phúc Thạnh with multi-semester schedules");
+        log.info("Seeded student 22130255 - Nguyễn Phúc Thạnh with multi-semester schedules");
     }
 
     private void seedSchedules(Student student) {
-        // HK1 2022-2023
         seedSemester(student, "1", "2022-2023",
                 LocalDate.of(2022, 9, 4), LocalDate.of(2023, 1, 8),
                 List.of(
@@ -103,7 +103,6 @@ public class DataSeeder implements CommandLineRunner {
                     cs("POLI1011", "Triết học Mác-Lênin", 3, "Hoàng Văn Em", "GD 301", 6, 2)
                 ));
 
-        // HK2 2022-2023
         seedSemester(student, "2", "2022-2023",
                 LocalDate.of(2023, 2, 13), LocalDate.of(2023, 6, 18),
                 List.of(
@@ -114,7 +113,6 @@ public class DataSeeder implements CommandLineRunner {
                     cs("POLI1021", "Kinh tế chính trị", 2, "Hoàng Văn Em", "GD 301", 6, 4)
                 ));
 
-        // HK1 2023-2024
         seedSemester(student, "1", "2023-2024",
                 LocalDate.of(2023, 9, 4), LocalDate.of(2024, 1, 7),
                 List.of(
@@ -125,7 +123,6 @@ public class DataSeeder implements CommandLineRunner {
                     cs("ENG2011", "Tiếng Anh chuyên ngành", 3, "Nguyễn Thị Mai", "PH 302", 6, 2)
                 ));
 
-        // HK2 2023-2024 (theo ảnh mẫu)
         seedSemester(student, "2", "2023-2024",
                 LocalDate.of(2024, 2, 19), LocalDate.of(2024, 6, 23),
                 List.of(
@@ -136,7 +133,6 @@ public class DataSeeder implements CommandLineRunner {
                     cs("COMP3041", "An toàn thông tin", 3, "Nguyễn Văn Hùng", "GD 201", 6, 2)
                 ));
 
-        // HK1 2024-2025
         seedSemester(student, "1", "2024-2025",
                 LocalDate.of(2024, 9, 2), LocalDate.of(2025, 1, 5),
                 List.of(
@@ -147,7 +143,6 @@ public class DataSeeder implements CommandLineRunner {
                     cs("ENG4011", "Tiếng Anh nâng cao", 3, "Nguyễn Thị Mai", "PH 302", 6, 2)
                 ));
 
-        // HK2 2024-2025 — học kỳ mới nhất, hiển thị mặc định
         seedSemester(student, "2", "2024-2025",
                 LocalDate.of(2025, 2, 17), LocalDate.of(2025, 6, 22),
                 List.of(
@@ -160,7 +155,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     /**
-     * Seed một học kỳ: tạo Course → Enrollment → Schedule cho mỗi môn.
+     * Seed một học kỳ: tạo Course → Section → Enrollment → Schedule cho mỗi môn.
      */
     private void seedSemester(Student student, String semester, String academicYear,
                                LocalDate startDate, LocalDate endDate,
@@ -173,20 +168,25 @@ public class DataSeeder implements CommandLineRunner {
             course.setCredits(c.credits());
             courseRepository.save(course);
 
-            // Enrollment: liên kết student ↔ course, chứa thông tin học kỳ
+            // Section: nhóm học phần (course + semester + year)
+            Section section = new Section();
+            section.setCourse(course);
+            section.setSemester(semester);
+            section.setAcademicYear(academicYear);
+            section.setStartDate(startDate);
+            section.setEndDate(endDate);
+            section.setIsLab(false);
+            sectionRepository.save(section);
+
+            // Enrollment: sinh viên đăng ký section này
             Enrollment enrollment = new Enrollment();
             enrollment.setStudent(student);
-            enrollment.setCourse(course);
-            enrollment.setSemester(semester);
-            enrollment.setAcademicYear(academicYear);
-            enrollment.setStartDate(startDate);
-            enrollment.setEndDate(endDate);
-            enrollment.setAttempt(1);
+            enrollment.setSection(section);
             enrollmentRepository.save(enrollment);
 
-            // Schedule: liên kết với enrollment, chứa thông tin lịch học
+            // Schedule: thông tin lịch học của section
             Schedule schedule = new Schedule();
-            schedule.setEnrollment(enrollment);
+            schedule.setSection(section);
             schedule.setLecturer(c.lecturer());
             schedule.setRoom(c.room());
             schedule.setDayOfWeek(c.dayOfWeek());
@@ -209,7 +209,6 @@ public class DataSeeder implements CommandLineRunner {
     // ─── Grade & Summary seeding ─────────────────────────────────────────────
 
     private void seedGradesAndSummaries(Student student) {
-        // HK1 2022-2023 — 14 tín chỉ đạt, tích lũy 14
         seedGrades(student, "1", "2022-2023", List.of(
             gd("COMP1011", 8.0f, 7.5f, 7.7f, 3.3f, "ĐẠT"),
             gd("MATH1011", 7.0f, 6.5f, 6.7f, 2.7f, "ĐẠT"),
@@ -219,7 +218,6 @@ public class DataSeeder implements CommandLineRunner {
         ));
         seedSummary(student, "1", "2022-2023", 7.45f, 3.18f, 7.45f, 3.18f, 12, 12);
 
-        // HK2 2022-2023 — 14 tín chỉ đạt, tích lũy 26
         seedGrades(student, "2", "2022-2023", List.of(
             gd("COMP1021", 8.5f, 8.0f, 8.2f, 3.7f, "ĐẠT"),
             gd("MATH1021", 6.5f, 5.5f, 5.9f, 1.9f, "NỢ"),
@@ -229,7 +227,6 @@ public class DataSeeder implements CommandLineRunner {
         ));
         seedSummary(student, "2", "2022-2023", 7.45f, 3.18f, 7.45f, 3.18f, 11, 23);
 
-        // HK1 2023-2024 — 15 tín chỉ đạt, tích lũy 38
         seedGrades(student, "1", "2023-2024", List.of(
             gd("COMP2011", 8.0f, 7.5f, 7.7f, 3.3f, "ĐẠT"),
             gd("COMP2021", 9.0f, 8.5f, 8.7f, 4.0f, "ĐẠT"),
@@ -239,7 +236,6 @@ public class DataSeeder implements CommandLineRunner {
         ));
         seedSummary(student, "1", "2023-2024", 7.70f, 3.34f, 7.55f, 3.25f, 15, 38);
 
-        // HK2 2023-2024 — 15 tín chỉ đạt, tích lũy 53
         seedGrades(student, "2", "2023-2024", List.of(
             gd("COMP3011", 8.5f, 7.0f, 7.6f, 3.0f, "ĐẠT"),
             gd("COMP3021", 9.0f, 8.5f, 8.7f, 4.0f, "ĐẠT"),
@@ -249,7 +245,6 @@ public class DataSeeder implements CommandLineRunner {
         ));
         seedSummary(student, "2", "2023-2024", 7.44f, 3.11f, 7.52f, 3.25f, 12, 50);
 
-        // HK1 2024-2025 — 15 tín chỉ đạt, tích lũy 65
         seedGrades(student, "1", "2024-2025", List.of(
             gd("COMP4011", 8.5f, 8.0f, 8.2f, 3.7f, "ĐẠT"),
             gd("COMP4021", 9.0f, 8.5f, 8.7f, 4.0f, "ĐẠT"),
@@ -259,22 +254,21 @@ public class DataSeeder implements CommandLineRunner {
         ));
         seedSummary(student, "1", "2024-2025", 7.70f, 3.34f, 7.58f, 3.27f, 15, 65);
 
-        // HK2 2024-2025 — chưa có điểm (học kỳ hiện tại)
         log.info("Seeded grades for all semesters");
     }
 
     private void seedGrades(Student student, String semester, String academicYear,
                              List<GradeData> gradeList) {
-        List<Enrollment> enrollments = enrollmentRepository
-                .findByStudentAndSemester(student.getStudentCode(), academicYear, semester);
+        List<Enrollment> enrollments =
+                enrollmentRepository.findByStudentAndSemester(student.getStudentCode(), academicYear, semester);
 
         for (GradeData gd : gradeList) {
             enrollments.stream()
-                    .filter(e -> e.getCourse().getCourseCode().equals(gd.courseCode()))
+                    .filter(e -> e.getSection().getCourse().getCourseCode().equals(gd.courseCode()))
                     .findFirst()
                     .ifPresent(enrollment -> {
                         Grade grade = new Grade();
-                        grade.setEnrollment(enrollment);
+                        grade.setSection(enrollment.getSection());
                         grade.setProcessScore(gd.processScore());
                         grade.setExamScore(gd.examScore());
                         grade.setFinalScore10(gd.finalScore10());

@@ -205,16 +205,16 @@ public class ChatbotService {
         List<Grade> grades = gradeRepository.findByStudentAndSemester(studentCode, academicYear, semester);
 
         Map<Long, Grade> gradeMap = grades.stream()
-                .collect(Collectors.toMap(g -> g.getEnrollment().getId(), g -> g));
+                .collect(Collectors.toMap(g -> g.getSection().getId(), g -> g));
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== BẢNG ĐIỂM HỌC KỲ ").append(semester).append(" NĂM HỌC ").append(academicYear).append(" ===\n");
 
         for (Enrollment e : enrollments) {
-            Grade g = gradeMap.get(e.getId());
-            sb.append("Môn: ").append(e.getCourse().getCourseName())
-              .append(" (").append(e.getCourse().getCourseCode()).append(")")
-              .append(" - ").append(e.getCourse().getCredits()).append(" tín chỉ\n");
+            Grade g = gradeMap.get(e.getSection().getId());
+            sb.append("Môn: ").append(e.getSection().getCourse().getCourseName())
+              .append(" (").append(e.getSection().getCourse().getCourseCode()).append(")")
+              .append(" - ").append(e.getSection().getCourse().getCredits()).append(" tín chỉ\n");
             if (g != null) {
                 sb.append("  Điểm quá trình: ").append(g.getProcessScore() != null ? g.getProcessScore() : "Chưa có").append("\n");
                 sb.append("  Điểm thi: ").append(g.getExamScore() != null ? g.getExamScore() : "Chưa có").append("\n");
@@ -260,8 +260,8 @@ public class ChatbotService {
         List<Enrollment> enrollments = enrollmentRepository.findByStudentAndSemester(studentCode, academicYear, semester);
         if (enrollments.isEmpty()) return "Không có dữ liệu lịch học cho học kỳ này.\n";
 
-        List<Long> ids = enrollments.stream().map(Enrollment::getId).collect(Collectors.toList());
-        List<Schedule> schedules = scheduleRepository.findByEnrollmentIds(ids);
+        List<Long> ids = enrollments.stream().map(e -> e.getSection().getId()).collect(Collectors.toList());
+        List<Schedule> schedules = scheduleRepository.findBySectionIds(ids);
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== THỜI KHÓA BIỂU HỌC KỲ ").append(semester).append(" NĂM HỌC ").append(academicYear).append(" ===\n");
@@ -272,7 +272,7 @@ public class ChatbotService {
                 String day = DAY_NAMES.getOrDefault(s.getDayOfWeek(), "Thứ " + s.getDayOfWeek());
                 String time = PERIOD_TIMES.getOrDefault(s.getPeriod(), "Ca " + s.getPeriod());
                 sb.append(day).append(" - ").append(time).append("\n");
-                sb.append("  Môn: ").append(s.getEnrollment().getCourse().getCourseName()).append("\n");
+                sb.append("  Môn: ").append(s.getSection().getCourse().getCourseName()).append("\n");
                 sb.append("  Phòng: ").append(nvl(s.getRoom())).append("\n");
                 sb.append("  Giảng viên: ").append(nvl(s.getLecturer())).append("\n");
             });
@@ -281,14 +281,15 @@ public class ChatbotService {
     }
 
     private String buildFailedCoursesContext(String studentCode, String userMessage) {
-        // Lấy tất cả grades của sinh viên, lọc result ="Failed"
+        // Lấy tất cả sections của sinh viên qua enrollments
         List<Enrollment> allEnrollments = enrollmentRepository.findAllByStudentCode(studentCode);
         if (allEnrollments.isEmpty()) return "Không có dữ liệu môn học.\n";
 
-        List<Long> allIds = allEnrollments.stream().map(Enrollment::getId).collect(Collectors.toList());
+        List<Long> sectionIds = allEnrollments.stream()
+                .map(e -> e.getSection().getId()).collect(Collectors.toList());
 
-        // Query tất cả grades rồi lọc phía Java
-        List<Grade> allGrades = gradeRepository.findAllByEnrollmentIds(allIds);
+        // Query grades theo section ids
+        List<Grade> allGrades = gradeRepository.findAllBySectionIds(sectionIds);
 
         List<Grade> failed = allGrades.stream()
                 .filter(g -> g.getResult() != null &&
@@ -301,10 +302,10 @@ public class ChatbotService {
             sb.append("Không có môn nào không đạt.\n");
         } else {
             for (Grade g : failed) {
-                Enrollment e = g.getEnrollment();
-                sb.append("Môn: ").append(e.getCourse().getCourseName())
-                  .append(" (").append(e.getCourse().getCourseCode()).append(")")
-                  .append(" - HK").append(e.getSemester()).append(" ").append(e.getAcademicYear()).append("\n");
+                Section sec = g.getSection();
+                sb.append("Môn: ").append(sec.getCourse().getCourseName())
+                  .append(" (").append(sec.getCourse().getCourseCode()).append(")")
+                  .append(" - HK").append(sec.getSemester()).append(" ").append(sec.getAcademicYear()).append("\n");
                 sb.append("  Điểm tổng kết: ").append(g.getFinalScore10() != null ? g.getFinalScore10() : "Chưa có").append("/10\n");
                 sb.append("  Kết quả: ").append(nvl(g.getResult())).append("\n");
             }
@@ -326,8 +327,8 @@ public class ChatbotService {
         List<Enrollment> enrollments = enrollmentRepository.findByStudentAndSemester(studentCode, academicYear, semester);
         if (enrollments.isEmpty()) return "Không có dữ liệu lịch học cho học kỳ hiện tại.\n";
 
-        List<Long> ids = enrollments.stream().map(Enrollment::getId).collect(Collectors.toList());
-        List<Schedule> schedules = scheduleRepository.findByEnrollmentIds(ids);
+        List<Long> sectionIds = enrollments.stream().map(e -> e.getSection().getId()).collect(Collectors.toList());
+        List<Schedule> schedules = scheduleRepository.findBySectionIds(sectionIds);
 
         List<Schedule> todaySchedules = schedules.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == todayCode)
@@ -344,7 +345,7 @@ public class ChatbotService {
             for (Schedule s : todaySchedules) {
                 String time = PERIOD_TIMES.getOrDefault(s.getPeriod(), "Ca " + s.getPeriod());
                 sb.append("Ca ").append(s.getPeriod()).append(" (").append(time).append(")\n");
-                sb.append("  Môn: ").append(s.getEnrollment().getCourse().getCourseName()).append("\n");
+                sb.append("  Môn: ").append(s.getSection().getCourse().getCourseName()).append("\n");
                 sb.append("  Phòng: ").append(nvl(s.getRoom())).append("\n");
                 sb.append("  Giảng viên: ").append(nvl(s.getLecturer())).append("\n");
             }

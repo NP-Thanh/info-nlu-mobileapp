@@ -3,11 +3,13 @@ package com.example.nlu.service;
 import com.example.nlu.entity.Course;
 import com.example.nlu.entity.Enrollment;
 import com.example.nlu.entity.Grade;
+import com.example.nlu.entity.Section;
 import com.example.nlu.entity.SemesterSummary;
 import com.example.nlu.entity.Student;
 import com.example.nlu.repo.CourseRepository;
 import com.example.nlu.repo.EnrollmentRepository;
 import com.example.nlu.repo.GradeRepository;
+import com.example.nlu.repo.SectionRepository;
 import com.example.nlu.repo.SemesterSummaryRepository;
 import com.example.nlu.repo.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class AdminAcademicService {
 
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
+    private final SectionRepository sectionRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final GradeRepository gradeRepository;
     private final SemesterSummaryRepository semesterSummaryRepository;
@@ -40,7 +43,6 @@ public class AdminAcademicService {
         if (courseRepository.existsByCourseCodeIgnoreCase(courseCode)) {
             throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode);
         }
-
         Course course = new Course();
         course.setCourseCode(courseCode.trim());
         course.setCourseName(name.trim());
@@ -58,7 +60,6 @@ public class AdminAcademicService {
         if (existingByCode.isPresent() && !existingByCode.get().getId().equals(id)) {
             throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode);
         }
-
         course.setCourseCode(courseCode.trim());
         course.setCourseName(name.trim());
         course.setCredits(credits);
@@ -73,9 +74,9 @@ public class AdminAcademicService {
     }
 
     public Map<String, Object> previewCourses(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+        if (file == null || file.isEmpty())
             throw new IllegalArgumentException("File excel không được để trống");
-        }
+
         List<Map<String, Object>> validRows = new ArrayList<>();
         List<Map<String, Object>> invalidRows = new ArrayList<>();
 
@@ -100,12 +101,10 @@ public class AdminAcademicService {
 
                 try {
                     validateCourseInput(courseCode, name, credits);
-                    rowData.put("valid", true);
-                    rowData.put("error", null);
+                    rowData.put("valid", true); rowData.put("error", null);
                     validRows.add(rowData);
                 } catch (Exception e) {
-                    rowData.put("valid", false);
-                    rowData.put("error", e.getMessage());
+                    rowData.put("valid", false); rowData.put("error", e.getMessage());
                     invalidRows.add(rowData);
                 }
             }
@@ -119,22 +118,14 @@ public class AdminAcademicService {
         allRows.addAll(validRows);
         allRows.addAll(invalidRows);
         allRows.sort(Comparator.comparingInt(r -> (int) r.get("row")));
-
-        return Map.of(
-                "validCount", validRows.size(),
-                "invalidCount", invalidRows.size(),
-                "rows", allRows
-        );
+        return Map.of("validCount", validRows.size(), "invalidCount", invalidRows.size(), "rows", allRows);
     }
 
     public Map<String, Object> previewGrades(String courseCode, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+        if (file == null || file.isEmpty())
             throw new IllegalArgumentException("File excel không được để trống");
-        }
-        if (isBlank(courseCode)) {
+        if (isBlank(courseCode))
             throw new IllegalArgumentException("course_code không được để trống");
-        }
-        // Validate course exists
         getCourseByCode(courseCode);
 
         List<Map<String, Object>> validRows = new ArrayList<>();
@@ -170,14 +161,11 @@ public class AdminAcademicService {
                     validateTerm(academicYear, semester);
                     validateScore(processScore, "Điểm quá trình");
                     validateScore(examScore, "Điểm thi");
-                    // Check student exists
                     getStudentByCode(studentCode);
-                    rowData.put("valid", true);
-                    rowData.put("error", null);
+                    rowData.put("valid", true); rowData.put("error", null);
                     validRows.add(rowData);
                 } catch (Exception e) {
-                    rowData.put("valid", false);
-                    rowData.put("error", e.getMessage());
+                    rowData.put("valid", false); rowData.put("error", e.getMessage());
                     invalidRows.add(rowData);
                 }
             }
@@ -191,42 +179,30 @@ public class AdminAcademicService {
         allRows.addAll(validRows);
         allRows.addAll(invalidRows);
         allRows.sort(Comparator.comparingInt(r -> (int) r.get("row")));
-
-        return Map.of(
-                "validCount", validRows.size(),
-                "invalidCount", invalidRows.size(),
-                "rows", allRows
-        );
+        return Map.of("validCount", validRows.size(), "invalidCount", invalidRows.size(), "rows", allRows);
     }
 
     @Transactional
     public Map<String, Object> importCourses(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+        if (file == null || file.isEmpty())
             throw new IllegalArgumentException("File excel không được để trống");
-        }
 
         int successCount = 0;
         List<String> errors = new ArrayList<>();
 
         try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
             Sheet sheet = workbook.getSheetAt(0);
-            if (sheet == null) {
-                throw new IllegalArgumentException("Không có sheet dữ liệu");
-            }
+            if (sheet == null) throw new IllegalArgumentException("Không có sheet dữ liệu");
             validateHeader(sheet, new String[]{"course_code", "name", "credits"});
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
-                if (row == null) {
-                    continue;
-                }
+                if (row == null) continue;
                 try {
                     String courseCode = getStringCell(row.getCell(0));
                     String name = getStringCell(row.getCell(1));
                     Integer credits = getIntCell(row.getCell(2));
-
                     validateCourseInput(courseCode, name, credits);
-
                     Course course = courseRepository.findByCourseCodeIgnoreCase(courseCode.trim())
                             .orElseGet(Course::new);
                     course.setCourseCode(courseCode.trim());
@@ -244,11 +220,7 @@ public class AdminAcademicService {
             throw new IllegalArgumentException("File excel không hợp lệ: " + e.getMessage());
         }
 
-        return Map.of(
-                "successCount", successCount,
-                "errorCount", errors.size(),
-                "errors", errors
-        );
+        return Map.of("successCount", successCount, "errorCount", errors.size(), "errors", errors);
     }
 
     @Transactional
@@ -261,17 +233,11 @@ public class AdminAcademicService {
 
     @Transactional
     public Map<String, Object> upsertManualGradeWithTerm(
-            String studentCode,
-            String academicYear,
-            String semester,
-            String courseCode,
-            Float processScore,
-            Float examScore
-    ) {
+            String studentCode, String academicYear, String semester,
+            String courseCode, Float processScore, Float examScore) {
         Student student = getStudentByCode(studentCode);
         Course course = getCourseByCode(courseCode);
         validateTerm(academicYear, semester);
-
         Grade grade = upsertGrade(student, course, academicYear, semester, processScore, examScore);
         recomputeSemesterSummary(student, academicYear, semester);
         return toGradeResponse(grade, studentCode, courseCode, academicYear, semester);
@@ -279,31 +245,26 @@ public class AdminAcademicService {
 
     @Transactional
     public Map<String, Object> importGrades(String courseCode, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+        if (file == null || file.isEmpty())
             throw new IllegalArgumentException("File excel không được để trống");
-        }
         Course course = getCourseByCode(courseCode);
         int successCount = 0;
         List<String> errors = new ArrayList<>();
 
         try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
             Sheet sheet = workbook.getSheetAt(0);
-            if (sheet == null) {
-                throw new IllegalArgumentException("Không có sheet dữ liệu");
-            }
+            if (sheet == null) throw new IllegalArgumentException("Không có sheet dữ liệu");
             validateHeader(sheet, new String[]{"mssv", "academic_year", "semester", "process_score", "exam_score"});
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
-
                 try {
                     String studentCode = getStringCell(row.getCell(0));
                     String academicYear = getStringCell(row.getCell(1));
                     String semester = getStringCell(row.getCell(2));
                     Float processScore = getFloatCell(row.getCell(3));
                     Float examScore = getFloatCell(row.getCell(4));
-
                     Student student = getStudentByCode(studentCode);
                     validateTerm(academicYear, semester);
                     upsertGrade(student, course, academicYear, semester, processScore, examScore);
@@ -319,19 +280,14 @@ public class AdminAcademicService {
             throw new IllegalArgumentException("File excel không hợp lệ: " + e.getMessage());
         }
 
-        return Map.of(
-                "courseCode", courseCode,
-                "successCount", successCount,
-                "errorCount", errors.size(),
-                "errors", errors
-        );
+        return Map.of("courseCode", courseCode, "successCount", successCount,
+                "errorCount", errors.size(), "errors", errors);
     }
 
     public List<Map<String, String>> searchStudentSuggestions(String keyword) {
         String kw = isBlank(keyword) ? "" : keyword.trim();
         return studentRepository.searchStudents(kw, null, null)
-                .stream()
-                .limit(20)
+                .stream().limit(20)
                 .map(s -> Map.of(
                         "studentCode", s.getStudentCode(),
                         "fullName", Optional.ofNullable(s.getFullName()).orElse("")
@@ -358,8 +314,8 @@ public class AdminAcademicService {
         return enrollmentRepository.findCoursesByStudentAndTerm(studentCode.trim(), academicYear.trim(), semester.trim(), kw)
                 .stream()
                 .map(enrollment -> {
-                    String code = Optional.ofNullable(enrollment.getCourse().getCourseCode()).orElse("");
-                    String name = Optional.ofNullable(enrollment.getCourse().getCourseName()).orElse("");
+                    String code = Optional.ofNullable(enrollment.getSection().getCourse().getCourseCode()).orElse("");
+                    String name = Optional.ofNullable(enrollment.getSection().getCourse().getCourseName()).orElse("");
                     Map<String, String> item = new LinkedHashMap<>();
                     item.put("courseCode", code);
                     item.put("courseName", name);
@@ -370,41 +326,36 @@ public class AdminAcademicService {
                 .toList();
     }
 
-    private Grade upsertGrade(
-            Student student,
-            Course course,
-            String academicYear,
-            String semester,
-            Float processScore,
-            Float examScore
-    ) {
+    private Grade upsertGrade(Student student, Course course, String academicYear, String semester,
+                               Float processScore, Float examScore) {
         validateScore(processScore, "Điểm quá trình");
         validateScore(examScore, "Điểm thi");
 
-        Enrollment enrollment;
+        Section section;
         if (!isBlank(academicYear) && !isBlank(semester)) {
-            enrollment = enrollmentRepository.findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
-                    student.getId(), course.getId(), academicYear.trim(), semester.trim()
-            ).orElseThrow(() -> new IllegalArgumentException(
-                    "Không tìm thấy enrollment lý thuyết (is_lab=0) cho môn học trong học kỳ/năm học đã chọn"
-            ));
+            // Tìm section LT (is_lab=false) theo course + term
+            section = sectionRepository
+                    .findTopByCourse_IdAndSemesterAndAcademicYearAndIsLabFalseOrderByIdDesc(
+                            course.getId(), semester.trim(), academicYear.trim())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Không tìm thấy section lý thuyết (is_lab=0) cho môn học trong học kỳ/năm học đã chọn"
+                    ));
         } else {
-            enrollment = enrollmentRepository.findTopByStudent_IdAndCourse_IdAndIsLabFalseOrderByIdDesc(
-                            student.getId(), course.getId()
-                    )
+            // Tìm section LT mới nhất theo course
+            section = sectionRepository
+                    .findTopByCourse_IdAndIsLabFalseOrderByIdDesc(course.getId())
                     .orElseGet(() -> {
-                        Enrollment e = new Enrollment();
-                        e.setStudent(student);
-                        e.setCourse(course);
-                        e.setAttempt(1);
-                        e.setIsLab(false);
-                        return enrollmentRepository.save(e);
+                        Section sec = new Section();
+                        sec.setCourse(course);
+                        sec.setSemester("");
+                        sec.setAcademicYear("");
+                        sec.setIsLab(false);
+                        return sectionRepository.save(sec);
                     });
         }
 
-        Grade grade = gradeRepository.findByEnrollment_Id(enrollment.getId())
-                .orElseGet(Grade::new);
-        grade.setEnrollment(enrollment);
+        Grade grade = gradeRepository.findBySection_Id(section.getId()).orElseGet(Grade::new);
+        grade.setSection(section);
         grade.setProcessScore(processScore);
         grade.setExamScore(examScore);
 
@@ -418,46 +369,37 @@ public class AdminAcademicService {
 
     private void recomputeSemesterSummary(Student student, String academicYear, String semester) {
         List<Grade> grades = gradeRepository.findByStudentAndSemester(
-                student.getStudentCode(),
-                academicYear,
-                semester
-        );
+                student.getStudentCode(), academicYear, semester);
 
         Map<String, Grade> gradeByCourseCode = new LinkedHashMap<>();
         for (Grade grade : grades) {
-            if (grade.getEnrollment() == null || grade.getEnrollment().getCourse() == null) {
-                continue;
-            }
-            String courseCode = grade.getEnrollment().getCourse().getCourseCode();
-            if (isBlank(courseCode) || grade.getFinalScore10() == null || grade.getFinalScore4() == null) {
-                continue;
-            }
+            if (grade.getSection() == null || grade.getSection().getCourse() == null) continue;
+            String courseCode = grade.getSection().getCourse().getCourseCode();
+            if (isBlank(courseCode) || grade.getFinalScore10() == null || grade.getFinalScore4() == null) continue;
             Grade existing = gradeByCourseCode.get(courseCode);
-            boolean isCurrentTheory = grade.getEnrollment().getIsLab() == null || !grade.getEnrollment().getIsLab();
+            boolean isCurrentTheory = grade.getSection().getIsLab() == null
+                    || !grade.getSection().getIsLab();
             if (existing == null) {
                 gradeByCourseCode.put(courseCode, grade);
             } else {
-                boolean existingTheory = existing.getEnrollment().getIsLab() == null || !existing.getEnrollment().getIsLab();
+                boolean existingTheory = existing.getSection().getIsLab() == null
+                        || !existing.getSection().getIsLab();
                 if (!existingTheory && isCurrentTheory) {
                     gradeByCourseCode.put(courseCode, grade);
                 }
             }
         }
 
-        double weighted10 = 0;
-        double weighted4 = 0;
-        int gradedCredits = 0;
-        int passedCredits = 0;
+        double weighted10 = 0, weighted4 = 0;
+        int gradedCredits = 0, passedCredits = 0;
 
         for (Grade grade : gradeByCourseCode.values()) {
-            Integer credits = grade.getEnrollment().getCourse().getCredits();
+            Integer credits = grade.getSection().getCourse().getCredits();
             if (credits == null || credits <= 0) continue;
             weighted10 += grade.getFinalScore10() * credits;
             weighted4 += grade.getFinalScore4() * credits;
             gradedCredits += credits;
-            if ("Passed".equalsIgnoreCase(grade.getResult())) {
-                passedCredits += credits;
-            }
+            if ("Passed".equalsIgnoreCase(grade.getResult())) passedCredits += credits;
         }
 
         float gpa10 = gradedCredits == 0 ? 0f : round2(weighted10 / gradedCredits);
@@ -481,7 +423,6 @@ public class AdminAcademicService {
         } else {
             int previousCredits = Optional.ofNullable(previous.getCumulativeCredits()).orElse(0);
             int totalCredits = previousCredits + passedCredits;
-
             if (totalCredits == 0) {
                 summary.setCumulativeGpa10(0f);
                 summary.setCumulativeGpa4(0f);
@@ -495,7 +436,6 @@ public class AdminAcademicService {
             }
             summary.setCumulativeCredits(totalCredits);
         }
-
         semesterSummaryRepository.save(summary);
     }
 
@@ -504,7 +444,6 @@ public class AdminAcademicService {
         int currentOrder = termOrder(academicYear, semester);
         SemesterSummary nearest = null;
         int nearestOrder = Integer.MIN_VALUE;
-
         for (SemesterSummary item : all) {
             int itemOrder = termOrder(item.getAcademicYear(), item.getSemester());
             if (itemOrder < currentOrder && itemOrder > nearestOrder) {
@@ -518,28 +457,16 @@ public class AdminAcademicService {
     private int termOrder(String academicYear, String semester) {
         if (isBlank(academicYear) || isBlank(semester)) return Integer.MIN_VALUE;
         int startYear;
-        try {
-            String[] years = academicYear.trim().split("-");
-            startYear = Integer.parseInt(years[0]);
-        } catch (Exception ex) {
-            startYear = 0;
-        }
+        try { startYear = Integer.parseInt(academicYear.trim().split("-")[0]); }
+        catch (Exception ex) { startYear = 0; }
         int sem;
-        try {
-            sem = Integer.parseInt(semester.trim());
-        } catch (Exception ex) {
-            sem = 0;
-        }
+        try { sem = Integer.parseInt(semester.trim()); }
+        catch (Exception ex) { sem = 0; }
         return startYear * 10 + sem;
     }
 
-    private Map<String, Object> toGradeResponse(
-            Grade grade,
-            String studentCode,
-            String courseCode,
-            String academicYear,
-            String semester
-    ) {
+    private Map<String, Object> toGradeResponse(Grade grade, String studentCode, String courseCode,
+                                                  String academicYear, String semester) {
         return Map.of(
                 "studentCode", studentCode,
                 "courseCode", courseCode,
@@ -554,49 +481,31 @@ public class AdminAcademicService {
     }
 
     private Course getCourseByCode(String courseCode) {
-        if (isBlank(courseCode)) {
-            throw new IllegalArgumentException("course_code không được để trống");
-        }
+        if (isBlank(courseCode)) throw new IllegalArgumentException("course_code không được để trống");
         return courseRepository.findByCourseCodeIgnoreCase(courseCode.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học: " + courseCode));
     }
 
     private Student getStudentByCode(String studentCode) {
-        if (isBlank(studentCode)) {
-            throw new IllegalArgumentException("mssv không được để trống");
-        }
+        if (isBlank(studentCode)) throw new IllegalArgumentException("mssv không được để trống");
         return studentRepository.findByStudentCode(studentCode.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sinh viên: " + studentCode));
     }
 
     private void validateCourseInput(String courseCode, String name, Integer credits) {
-        if (isBlank(courseCode)) {
-            throw new IllegalArgumentException("course_code không được để trống");
-        }
-        if (isBlank(name)) {
-            throw new IllegalArgumentException("name không được để trống");
-        }
-        if (credits == null || credits < 2) {
-            throw new IllegalArgumentException("credits phải >= 2");
-        }
+        if (isBlank(courseCode)) throw new IllegalArgumentException("course_code không được để trống");
+        if (isBlank(name)) throw new IllegalArgumentException("name không được để trống");
+        if (credits == null || credits < 2) throw new IllegalArgumentException("credits phải >= 2");
     }
 
     private void validateScore(Float score, String label) {
-        if (score == null) {
-            throw new IllegalArgumentException(label + " không được để trống");
-        }
-        if (score < 0 || score > 10) {
-            throw new IllegalArgumentException(label + " phải trong khoảng 0-10");
-        }
+        if (score == null) throw new IllegalArgumentException(label + " không được để trống");
+        if (score < 0 || score > 10) throw new IllegalArgumentException(label + " phải trong khoảng 0-10");
     }
 
     private void validateTerm(String academicYear, String semester) {
-        if (isBlank(academicYear)) {
-            throw new IllegalArgumentException("academic_year không được để trống");
-        }
-        if (isBlank(semester)) {
-            throw new IllegalArgumentException("semester không được để trống");
-        }
+        if (isBlank(academicYear)) throw new IllegalArgumentException("academic_year không được để trống");
+        if (isBlank(semester)) throw new IllegalArgumentException("semester không được để trống");
     }
 
     private float convertTo4Scale(float final10) {
@@ -610,13 +519,8 @@ public class AdminAcademicService {
         return 0.0f;
     }
 
-    private float round1(float value) {
-        return Math.round(value * 10f) / 10f;
-    }
-
-    private float round2(double value) {
-        return (float) (Math.round(value * 100.0) / 100.0);
-    }
+    private float round1(float value) { return Math.round(value * 10f) / 10f; }
+    private float round2(double value) { return (float) (Math.round(value * 100.0) / 100.0); }
 
     private String getStringCell(Cell cell) {
         if (cell == null) return null;
@@ -630,52 +534,32 @@ public class AdminAcademicService {
 
     private Integer getIntCell(Cell cell) {
         if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC) {
-            return (int) cell.getNumericCellValue();
-        }
-        if (cell.getCellType() == CellType.STRING) {
-            return Integer.parseInt(cell.getStringCellValue().trim());
-        }
+        if (cell.getCellType() == CellType.NUMERIC) return (int) cell.getNumericCellValue();
+        if (cell.getCellType() == CellType.STRING) return Integer.parseInt(cell.getStringCellValue().trim());
         return null;
     }
 
     private Float getFloatCell(Cell cell) {
         if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC) {
-            return (float) cell.getNumericCellValue();
-        }
-        if (cell.getCellType() == CellType.STRING) {
-            return Float.parseFloat(cell.getStringCellValue().trim());
-        }
+        if (cell.getCellType() == CellType.NUMERIC) return (float) cell.getNumericCellValue();
+        if (cell.getCellType() == CellType.STRING) return Float.parseFloat(cell.getStringCellValue().trim());
         return null;
     }
 
-    private boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
+    private boolean isBlank(String s) { return s == null || s.isBlank(); }
 
-    /**
-     * Validates that the header row of a sheet matches the expected column names (case-insensitive, trimmed).
-     * Throws IllegalArgumentException with a descriptive message if the header doesn't match.
-     */
     private void validateHeader(Sheet sheet, String[] expectedHeaders) {
         Row headerRow = sheet.getRow(0);
-        if (headerRow == null) {
-            throw new IllegalArgumentException(
-                "File thiếu dòng header. Dòng đầu tiên phải là: " + String.join(" | ", expectedHeaders)
-            );
-        }
+        if (headerRow == null)
+            throw new IllegalArgumentException("File thiếu dòng header. Dòng đầu tiên phải là: "
+                    + String.join(" | ", expectedHeaders));
         for (int i = 0; i < expectedHeaders.length; i++) {
             Cell cell = headerRow.getCell(i);
             String actual = cell == null ? "" : getStringCell(cell);
             String expected = expectedHeaders[i];
-            if (actual == null || !actual.trim().equalsIgnoreCase(expected)) {
-                throw new IllegalArgumentException(
-                    "Header không đúng định dạng. Cột " + (i + 1) + " phải là \"" + expected
-                    + "\" nhưng nhận được \"" + (actual == null ? "(trống)" : actual.trim()) + "\". "
-                    + "Header yêu cầu: " + String.join(" | ", expectedHeaders)
-                );
-            }
+            if (actual == null || !actual.trim().equalsIgnoreCase(expected))
+                throw new IllegalArgumentException("Header không đúng. Cột " + (i + 1) + " phải là \""
+                        + expected + "\" nhưng nhận \"" + (actual == null ? "(trống)" : actual.trim()) + "\"");
         }
     }
 }
