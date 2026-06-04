@@ -408,4 +408,31 @@ class AdminRepository {
   Future<void> deleteAdminUsers(List<int> ids) async {
     await _dio.delete('/admin/users', data: {'ids': ids});
   }
+
+  // ── Admin Chatbot Logs ───────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getChatbotLogs({
+    String? keyword,
+    bool? flagged,
+  }) async {
+    final response = await _dio.get('/admin/chatbot/logs', queryParameters: {
+      if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+      if (flagged != null) 'flagged': flagged,
+    });
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> getChatbotLogDetail(int id) async {
+    final response = await _dio.get('/admin/chatbot/logs/$id');
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<void> flagChatbotLogs(List<int> ids, {required bool flagged}) async {
+    await _dio.put('/admin/chatbot/logs/flag', data: {'ids': ids, 'flagged': flagged});
+  }
+
+  Future<void> deleteChatbotLogs(List<int> ids) async {
+    await _dio.delete('/admin/chatbot/logs', data: {'ids': ids});
+  }
 }

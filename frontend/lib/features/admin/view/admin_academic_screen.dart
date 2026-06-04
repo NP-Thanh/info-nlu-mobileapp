@@ -201,7 +201,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
 
   Future<void> _previewAndImportCourses() async {
     if (_importCoursePath == null) {
-      _showSnack('Hãy chọn file Excel môn học');
+      _showSnack('Hãy chọn file Excel môn học', isError: true);
       return;
     }
     try {
@@ -307,7 +307,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
         _selectedAcademicYear == null ||
         _selectedSemester == null ||
         _selectedCourseCode == null) {
-      _showSnack('Vui lòng chọn đủ MSSV, học kỳ/năm học và môn học');
+      _showSnack('Vui lòng chọn đủ MSSV, học kỳ/năm học và môn học', isError: true);
       return;
     }
     try {
@@ -355,11 +355,11 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
 
   Future<void> _previewAndImportGrades() async {
     if (_importGradeCourse == null) {
-      _showSnack('Chọn môn học trước khi import điểm');
+      _showSnack('Chọn môn học trước khi import điểm', isError: true);
       return;
     }
     if (_importGradePath == null) {
-      _showSnack('Hãy chọn file Excel điểm');
+      _showSnack('Hãy chọn file Excel điểm', isError: true);
       return;
     }
     final courseCode = _importGradeCourse!['courseCode']?.toString() ?? '';
@@ -415,11 +415,26 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(msg, style: const TextStyle(fontSize: 13))),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: Duration(seconds: isError ? 4 : 2),
+      ),
+    );
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────

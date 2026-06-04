@@ -33,6 +33,7 @@ public class AdminController {
     private final AdminScheduleService adminScheduleService;
     private final GradeService gradeService;
     private final AdminUserService adminUserService;
+    private final AdminChatbotService adminChatbotService;
 
     @GetMapping("/students")
     @PreAuthorize("hasRole('ADMIN')")
@@ -518,6 +519,64 @@ public class AdminController {
 
     private String studentRepository(Long id) {
         return adminStudentService.getStudentDetail(id).getStudentCode();
+    }
+
+    // ── Admin Chatbot Logs ────────────────────────────────────────────────────
+
+    @GetMapping("/chatbot/logs")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getChatbotLogs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean flagged
+    ) {
+        try {
+            var list = adminChatbotService.getLogs(keyword, flagged);
+            return ResponseEntity.ok(Map.of("total", list.size(), "data", list));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chatbot/logs/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getChatbotLogDetail(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminChatbotService.getLogDetail(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/chatbot/logs/flag")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> flagChatbotLogs(@RequestBody Map<String, Object> request) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Long> ids = ((List<Number>) request.get("ids")).stream().map(Number::longValue).toList();
+            boolean flagged = Boolean.TRUE.equals(request.get("flagged"));
+            adminChatbotService.flagLogs(ids, flagged);
+            String action = flagged ? "Đã gắn cờ vi phạm" : "Đã bỏ gắn cờ";
+            return ResponseEntity.ok(Map.of("message", action + " " + ids.size() + " log chat"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/chatbot/logs")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteChatbotLogs(@RequestBody Map<String, List<Long>> request) {
+        try {
+            adminChatbotService.deleteLogs(request.get("ids"));
+            return ResponseEntity.ok(Map.of("message", "Đã xóa log chat"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/students/{id}/grades/semesters")

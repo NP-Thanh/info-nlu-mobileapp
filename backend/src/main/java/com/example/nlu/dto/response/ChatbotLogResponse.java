@@ -11,4 +11,7 @@ public class ChatbotLogResponse {
     private String answer;
     private String createdAt;
     private Boolean isFlagged;
+    // Admin fields (null khi student tự xem lịch sử)
+    private String studentCode;
+    private String studentName;
 }
