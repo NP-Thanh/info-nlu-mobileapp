@@ -157,6 +157,36 @@ class AdminTheme {
         ),
         child: child,
       );
+
+  static Widget searchField({
+    required TextEditingController controller,
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) =>
+      TextField(
+        controller: controller,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: AppColors.textSecondary),
+          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+          filled: true,
+          fillColor: AppColors.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        ),
+      );
 }
 
 /// Gợi ý hiển thị overlay — không chiếm thêm chiều cao layout (tránh overflow).

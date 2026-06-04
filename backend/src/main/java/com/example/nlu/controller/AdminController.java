@@ -1,5 +1,7 @@
 package com.example.nlu.controller;
 
+import com.example.nlu.dto.request.AdminDeleteNotificationGroupRequest;
+import com.example.nlu.dto.request.AdminSendNotificationRequest;
 import com.example.nlu.dto.request.CreateStudentRequest;
 import com.example.nlu.dto.request.StudentIdsRequest;
 import com.example.nlu.dto.request.UpdateScheduleRequest;
@@ -34,6 +36,7 @@ public class AdminController {
     private final GradeService gradeService;
     private final AdminUserService adminUserService;
     private final AdminChatbotService adminChatbotService;
+    private final AdminNotificationService adminNotificationService;
 
     @GetMapping("/students")
     @PreAuthorize("hasRole('ADMIN')")
@@ -817,6 +820,72 @@ public class AdminController {
             return ResponseEntity.ok(Map.of("message", "Xóa tài khoản thành công"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Admin Notification Management ────────────────────────────────────────
+
+    @GetMapping("/notifications")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminNotifications(
+            @RequestParam(required = false) String content,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String title
+    ) {
+        try {
+            var list = adminNotificationService.getGroupedNotifications(content, type, title);
+            return ResponseEntity.ok(Map.of("total", list.size(), "data", list));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/notifications/detail")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminNotificationDetail(
+            @RequestParam String title,
+            @RequestParam String content,
+            @RequestParam(required = false) String type
+    ) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminNotificationService.getGroupDetail(title, content, type)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/notifications/filter-options")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getNotificationFilterOptions() {
+        return ResponseEntity.ok(Map.of(
+                "types", adminNotificationService.getDistinctTypes(),
+                "titles", adminNotificationService.getDistinctTitles()
+        ));
+    }
+
+    @PostMapping("/notifications/send")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> sendNotifications(@RequestBody AdminSendNotificationRequest request) {
+        try {
+            int count = adminNotificationService.sendNotifications(request);
+            return ResponseEntity.ok(Map.of("message", "Đã gửi thông báo đến " + count + " sinh viên"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/notifications")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteNotificationGroups(@RequestBody AdminDeleteNotificationGroupRequest request) {
+        try {
+            adminNotificationService.deleteGroups(request);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa thông báo"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
         }

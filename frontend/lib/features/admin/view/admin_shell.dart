@@ -7,6 +7,7 @@ import 'admin_settings_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_section_screen.dart';
 import 'admin_chatbot_screen.dart';
+import 'admin_notification_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -85,7 +86,12 @@ class _AdminMenuScreen extends StatelessWidget {
         icon: Icons.smart_toy_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminChatbotScreen())),
       ),
-      const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Gửi thông báo', icon: Icons.notifications_outlined),
+      _AdminMenuItem(
+        title: 'Quản lý thông báo',
+        subtitle: 'Gửi thông báo',
+        icon: Icons.notifications_outlined,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationScreen())),
+      ),
     ];
 
     return Scaffold(

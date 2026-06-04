@@ -435,4 +435,58 @@ class AdminRepository {
   Future<void> deleteChatbotLogs(List<int> ids) async {
     await _dio.delete('/admin/chatbot/logs', data: {'ids': ids});
   }
+
+  // ── Admin Notifications ──────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAdminNotifications({
+    String? content,
+    String? type,
+    String? title,
+  }) async {
+    final response = await _dio.get('/admin/notifications', queryParameters: {
+      if (content != null && content.trim().isNotEmpty) 'content': content.trim(),
+      if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+    });
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> getAdminNotificationDetail({
+    required String title,
+    required String content,
+    String? type,
+  }) async {
+    final response = await _dio.get('/admin/notifications/detail', queryParameters: {
+      'title': title,
+      'content': content,
+      if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+    });
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> getNotificationFilterOptions() async {
+    final response = await _dio.get('/admin/notifications/filter-options');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<String> sendAdminNotification({
+    required String title,
+    required String content,
+    String? type,
+    required List<int> studentIds,
+  }) async {
+    final response = await _dio.post('/admin/notifications/send', data: {
+      'title': title,
+      'content': content,
+      if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+      'studentIds': studentIds,
+    });
+    return (response.data as Map<String, dynamic>)['message'] as String? ?? 'Gửi thành công';
+  }
+
+  Future<void> deleteAdminNotificationGroups(
+      List<Map<String, String?>> groups) async {
+    await _dio.delete('/admin/notifications', data: {'groups': groups});
+  }
 }
