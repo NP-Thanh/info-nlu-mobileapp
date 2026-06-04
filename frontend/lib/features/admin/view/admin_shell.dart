@@ -5,7 +5,7 @@ import 'admin_students_screen.dart';
 import 'admin_academic_screen.dart';
 import 'admin_settings_screen.dart';
 import 'admin_users_screen.dart';
-import 'admin_schedule_screen.dart';
+import 'admin_section_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -56,7 +56,7 @@ class _AdminMenuScreen extends StatelessWidget {
     final items = [
       _AdminMenuItem(
         title: 'Quản lý tài khoản Admin',
-        subtitle: 'Thêm, tìm kiếm, xóa tài khoản admin',
+        subtitle: 'Danh sách tài khoản admin',
         icon: Icons.manage_accounts_outlined,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
       ),
@@ -74,9 +74,9 @@ class _AdminMenuScreen extends StatelessWidget {
       ),
       _AdminMenuItem(
         title: 'Quản lý lịch học',
-        subtitle: 'Xếp lịch học',
-        icon: Icons.calendar_month_outlined,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminScheduleScreen())),
+        subtitle: 'Quản lý học phần - Sắp xếp ca học',
+        icon: Icons.class_outlined,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminSectionScreen())),
       ),
       const _AdminMenuItem(title: 'Quản lý chatbot', subtitle: 'Lịch sử chat', icon: Icons.smart_toy_outlined),
       const _AdminMenuItem(title: 'Quản lý thông báo', subtitle: 'Gửi thông báo', icon: Icons.notifications_outlined),
@@ -86,6 +86,7 @@ class _AdminMenuScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AdminTheme.appBar(context, 'Trang quản trị'),
       body: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -145,9 +146,8 @@ class _MenuCard extends StatelessWidget {
   }
 
   void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chức năng sẽ được cập nhật ở bước tiếp theo')),
-    );
+    AdminNotification.showInfo(context, 'Chức năng sẽ được cập nhật ở bước tiếp theo',
+        title: 'Sắp ra mắt');
   }
 }
 

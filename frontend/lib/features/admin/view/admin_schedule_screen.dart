@@ -1,4 +1,4 @@
-// admin_schedule_screen.dart
+﻿// admin_schedule_screen.dart
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -78,7 +78,7 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
       if (!mounted) return;
       setState(() => _schedules = list);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách lịch học');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách lịch học', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -145,7 +145,7 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
       _cancelSelection();
       _fetchSchedules();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
@@ -181,7 +181,7 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
       _fetchSchedules();
       _fetchAcademicYears();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Import thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Import thất bại', isError: true);
     }
   }
 
@@ -441,14 +441,24 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
   Widget _buildList() {
     if (_loading) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     if (_schedules.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_month_outlined, size: 56, color: AppColors.border),
-            const SizedBox(height: 12),
-            const Text('Chưa có lịch học nào', style: TextStyle(color: AppColors.textSecondary)),
-          ],
+      return RefreshIndicator(
+        onRefresh: _loadData,
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: 300,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.calendar_month_outlined, size: 56, color: AppColors.border),
+                  const SizedBox(height: 12),
+                  const Text('Chưa có lịch học nào', style: TextStyle(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -464,7 +474,11 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
         return b.compareTo(a);
       });
 
-    return ListView.builder(
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: AppColors.primary,
+      child: ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       itemCount: sortedKeys.length,
       itemBuilder: (context, i) {
@@ -486,6 +500,7 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
           onToggleSelect: _toggleSelect,
         );
       },
+    ),
     );
   }
 
@@ -536,9 +551,13 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
         ),
       );
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 }
 
@@ -822,7 +841,7 @@ class _AdminScheduleDetailScreenState extends State<AdminScheduleDetailScreen> {
       final data = await widget.repo.getAdminScheduleDetail(widget.scheduleId);
       if (mounted) setState(() => _detail = data);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được thông tin lịch học');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được thông tin lịch học', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -864,7 +883,7 @@ class _AdminScheduleDetailScreenState extends State<AdminScheduleDetailScreen> {
       await widget.repo.softDeleteAdminSchedule(widget.scheduleId);
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
@@ -1050,9 +1069,13 @@ class _AdminScheduleDetailScreenState extends State<AdminScheduleDetailScreen> {
     );
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 }
 
@@ -1175,7 +1198,7 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
       }
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Lưu thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Lưu thất bại', isError: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1455,9 +1478,13 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
     );
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 }
 
@@ -1512,7 +1539,7 @@ class _StudentPickerScreenState extends State<_StudentPickerScreen> {
         _filtered = list;
       });
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách sinh viên');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách sinh viên', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1535,10 +1562,11 @@ class _StudentPickerScreenState extends State<_StudentPickerScreen> {
     setState(() => _saving = true);
     try {
       await widget.repo.updateScheduleStudents(widget.scheduleId, _selectedIds.toList());
-      _showSnack('Đã cập nhật danh sách sinh viên');
+      if (!mounted) return;
+      await AdminNotification.show(context, 'Đã cập nhật danh sách sinh viên');
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Cập nhật thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Cập nhật thất bại', isError: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1682,9 +1710,13 @@ class _StudentPickerScreenState extends State<_StudentPickerScreen> {
     );
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 }
 

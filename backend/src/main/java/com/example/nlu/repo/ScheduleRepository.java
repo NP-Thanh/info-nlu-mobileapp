@@ -76,4 +76,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
            "WHERE (s.isDeleted = false OR s.isDeleted IS NULL) " +
            "ORDER BY sec.academicYear DESC")
     List<String> findDistinctAcademicYears();
+
+    /** Lấy schedules theo một sectionId (cho section detail) */
+    @Query("SELECT s FROM Schedule s " +
+           "WHERE s.section.id = :sectionId " +
+           "AND (s.isDeleted = false OR s.isDeleted IS NULL) " +
+           "ORDER BY s.dayOfWeek, s.period")
+    List<Schedule> findActiveBySectionId(@Param("sectionId") Long sectionId);
 }

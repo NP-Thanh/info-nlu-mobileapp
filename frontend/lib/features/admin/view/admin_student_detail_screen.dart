@@ -43,7 +43,7 @@ class _AdminStudentDetailScreenState extends State<AdminStudentDetailScreen> wit
       if (!mounted) return;
       setState(() => _student = data);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được thông tin sinh viên');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được thông tin sinh viên', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -61,9 +61,13 @@ class _AdminStudentDetailScreenState extends State<AdminStudentDetailScreen> wit
     }
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   @override
@@ -320,7 +324,7 @@ class _ScheduleTabState extends State<_ScheduleTab> {
       _load();
       _showSnack('Đã cập nhật lịch học');
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Cập nhật thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Cập nhật thất bại', isError: true);
     }
   }
 
@@ -347,13 +351,17 @@ class _ScheduleTabState extends State<_ScheduleTab> {
       _load();
       _showSnack('Đã xóa lịch học');
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   @override
@@ -597,7 +605,7 @@ class _GradesTabState extends State<_GradesTab> {
       });
       if (list.isNotEmpty) _loadGrades();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được học kỳ');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được học kỳ', isError: true);
     } finally {
       if (mounted) setState(() => _loadingSemesters = false);
     }
@@ -618,7 +626,7 @@ class _GradesTabState extends State<_GradesTab> {
       if (!mounted) return;
       setState(() => _grades = data);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được bảng điểm');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được bảng điểm', isError: true);
     } finally {
       if (mounted) setState(() => _loadingGrades = false);
     }
@@ -646,9 +654,13 @@ class _GradesTabState extends State<_GradesTab> {
     );
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   @override

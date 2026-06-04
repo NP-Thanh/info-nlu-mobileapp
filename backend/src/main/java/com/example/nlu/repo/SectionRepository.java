@@ -35,4 +35,24 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
 
     /** Tìm section LT (isLab=false) mới nhất theo course (không cần term) */
     Optional<Section> findTopByCourse_IdAndIsLabFalseOrderByIdDesc(Long courseId);
+
+    /** Lấy tất cả sections với course, lọc keyword/semester/academicYear */
+    @Query("""
+           SELECT s FROM Section s
+           JOIN FETCH s.course c
+           WHERE (:courseKeyword IS NULL
+                  OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :courseKeyword, '%'))
+                  OR LOWER(c.courseName) LIKE LOWER(CONCAT('%', :courseKeyword, '%')))
+             AND (:semester IS NULL OR s.semester = :semester)
+             AND (:academicYear IS NULL OR s.academicYear = :academicYear)
+           ORDER BY s.academicYear DESC, s.semester DESC, c.courseCode ASC
+           """)
+    List<Section> findAllWithFilters(
+            @Param("courseKeyword") String courseKeyword,
+            @Param("semester") String semester,
+            @Param("academicYear") String academicYear);
+
+    /** Các năm học phân biệt từ sections */
+    @Query("SELECT DISTINCT s.academicYear FROM Section s ORDER BY s.academicYear DESC")
+    List<String> findDistinctAcademicYears();
 }

@@ -290,6 +290,103 @@ class AdminRepository {
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  // ── Admin Sections ──────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAdminSections({
+    String? keyword,
+    String? semester,
+    String? academicYear,
+  }) async {
+    final response = await _dio.get('/admin/sections', queryParameters: {
+      if (keyword != null && keyword.trim().isNotEmpty) 'keyword': keyword.trim(),
+      if (semester != null && semester.trim().isNotEmpty) 'semester': semester.trim(),
+      if (academicYear != null && academicYear.trim().isNotEmpty) 'academicYear': academicYear.trim(),
+    });
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<List<String>> getSectionAcademicYears() async {
+    final response = await _dio.get('/admin/sections/academic-years');
+    final data = (response.data as Map<String, dynamic>)['data'] as List? ?? [];
+    return data.map((e) => e.toString()).toList();
+  }
+
+  Future<Map<String, dynamic>> getAdminSectionDetail(int sectionId) async {
+    final response = await _dio.get('/admin/sections/$sectionId');
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> createAdminSection(Map<String, dynamic> payload) async {
+    final response = await _dio.post('/admin/sections', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> updateAdminSection(int id, Map<String, dynamic> payload) async {
+    final response = await _dio.put('/admin/sections/$id', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<void> deleteAdminSection(int id) async {
+    await _dio.delete('/admin/sections/$id');
+  }
+
+  Future<void> deleteAdminSectionsBulk(List<int> ids) async {
+    await _dio.delete('/admin/sections', data: {'ids': ids});
+  }
+
+  Future<Map<String, dynamic>> addScheduleToSection(int sectionId, Map<String, dynamic> payload) async {
+    final response = await _dio.post('/admin/sections/$sectionId/schedules', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> updateScheduleInSection(int scheduleId, Map<String, dynamic> payload) async {
+    final response = await _dio.put('/admin/sections/schedules/$scheduleId', data: payload);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<void> deleteScheduleInSection(int scheduleId) async {
+    await _dio.delete('/admin/sections/schedules/$scheduleId');
+  }
+
+  Future<Map<String, dynamic>> updateSectionStudents(int sectionId, List<int> studentIds) async {
+    final response = await _dio.put('/admin/sections/$sectionId/students',
+        data: {'studentIds': studentIds});
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> previewSectionStudentsExcel(int sectionId, String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/sections/$sectionId/students/preview', data: formData);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> importSectionStudentsExcel(int sectionId, String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/sections/$sectionId/students/import', data: formData);
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> previewSectionsExcel(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/sections/preview', data: formData);
+    return Map<String, dynamic>.from((response.data as Map)['data'] as Map);
+  }
+
+  Future<Map<String, dynamic>> importSectionsExcel(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: File(filePath).uri.pathSegments.last),
+    });
+    final response = await _dio.post('/admin/sections/import', data: formData);
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   // ── Admin Users ─────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getAdminUsers({String? keyword}) async {

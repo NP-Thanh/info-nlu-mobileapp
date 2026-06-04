@@ -57,7 +57,7 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
       if (!mounted) return;
       setState(() => _students = list);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách sinh viên');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách sinh viên', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -126,7 +126,7 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
       _exitSelectionMode();
       _fetchStudents();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
@@ -157,9 +157,13 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
     _fetchStudents();
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   @override
@@ -280,8 +284,21 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : _students.isEmpty
-                    ? const Center(child: Text('Không có sinh viên', style: TextStyle(color: AppColors.textSecondary)))
-                    : ListView.separated(
+                    ? RefreshIndicator(
+                        onRefresh: _fetchStudents,
+                        color: AppColors.primary,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: const SizedBox(
+                            height: 200,
+                            child: Center(child: Text('Không có sinh viên', style: TextStyle(color: AppColors.textSecondary))),
+                          ),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _fetchStudents,
+                        color: AppColors.primary,
+                        child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: _students.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -375,6 +392,7 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                           );
                         },
                       ),
+                      ),  // RefreshIndicator
           ),
         ],
       ),

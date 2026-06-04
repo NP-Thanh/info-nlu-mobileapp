@@ -117,7 +117,7 @@ class _AdminStudentFormScreenState extends State<AdminStudentFormScreen> {
       final resolved = await _repo.resolveProgram(_selectedFaculty!, _selectedMajor!, _selectedSpecialization!);
       setState(() => _programId = (resolved['programId'] as num).toInt());
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không xác định được chương trình đào tạo');
+      _showSnack(e.response?.data?['message'] ?? 'Không xác định được chương trình đào tạo', isError: true);
     }
   }
 
@@ -157,15 +157,19 @@ class _AdminStudentFormScreenState extends State<AdminStudentFormScreen> {
       if (!mounted) return;
       Navigator.pop(context, true);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Lưu thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Lưu thất bại', isError: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   @override

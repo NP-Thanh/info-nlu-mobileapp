@@ -76,7 +76,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       _courses = await _repo.getCourses();
       _filterCourses();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách môn học');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách môn học', isError: true);
     } finally {
       if (mounted) setState(() => _loadingCourses = false);
     }
@@ -155,7 +155,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       _showSnack('Lưu môn học thành công');
       _loadCourses();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Lưu môn học thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Lưu môn học thất bại', isError: true);
     }
   }
 
@@ -182,7 +182,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       _showSnack('Đã xóa môn học');
       _loadCourses();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa môn học thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Xóa môn học thất bại', isError: true);
     }
   }
 
@@ -218,7 +218,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       });
       _loadCourses();
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Import thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Import thất bại', isError: true);
     }
   }
 
@@ -282,7 +282,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       if (!mounted) return;
       setState(() => _termOptions = terms);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được học kỳ/năm học');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được học kỳ/năm học', isError: true);
     }
   }
 
@@ -298,7 +298,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       if (!mounted) return;
       setState(() => _courseOptions = courses);
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Không tải được môn học theo học kỳ');
+      _showSnack(e.response?.data?['message'] ?? 'Không tải được môn học theo học kỳ', isError: true);
     }
   }
 
@@ -321,7 +321,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
       });
       _showSnack(response['message']?.toString() ?? 'Lưu điểm thành công');
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Lưu điểm thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Lưu điểm thất bại', isError: true);
     }
   }
 
@@ -376,7 +376,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
         _importGradeFileName = null;
       });
     } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Import điểm thất bại');
+      _showSnack(e.response?.data?['message'] ?? 'Import điểm thất bại', isError: true);
     }
   }
 
@@ -413,9 +413,13 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
     );
   }
 
-  void _showSnack(String msg) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -589,7 +593,11 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
                         ],
                       ),
                     )
-                  : ListView.separated(
+                  : RefreshIndicator(
+                      onRefresh: _loadCourses,
+                      color: AppColors.primary,
+                      child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                       itemCount: _filteredCourses.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -605,6 +613,7 @@ class _AdminAcademicScreenState extends State<AdminAcademicScreen>
                           ),
                         );
                       },
+                    ),
                     ),
         ),
       ],

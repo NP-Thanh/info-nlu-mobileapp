@@ -6,6 +6,8 @@ import com.example.nlu.dto.request.UpdateScheduleRequest;
 import com.example.nlu.dto.request.UpdateStudentRequest;
 import com.example.nlu.dto.request.CreateScheduleRequest;
 import com.example.nlu.dto.request.UpdateScheduleAdminRequest;
+import com.example.nlu.dto.request.CreateSectionRequest;
+import com.example.nlu.dto.request.CreateSectionScheduleRequest;
 import com.example.nlu.dto.response.AdminStudentResponse;
 import com.example.nlu.dto.response.GradeResponse;
 import com.example.nlu.entity.Course;
@@ -305,6 +307,208 @@ public class AdminController {
         try {
             var result = adminScheduleService.importScheduleExcel(file);
             return ResponseEntity.ok(Map.of("message", "Import lịch học hoàn tất", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Admin Section Management ─────────────────────────────────────────────
+
+    @GetMapping("/sections")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminSections(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String semester,
+            @RequestParam(required = false) String academicYear
+    ) {
+        try {
+            var list = adminScheduleService.getSections(keyword, semester, academicYear);
+            return ResponseEntity.ok(Map.of("total", list.size(), "data", list));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/sections/academic-years")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getSectionAcademicYears() {
+        return ResponseEntity.ok(Map.of("data", adminScheduleService.getDistinctSectionAcademicYears()));
+    }
+
+    @GetMapping("/sections/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminSectionDetail(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminScheduleService.getSectionDetail(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/sections")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> createAdminSection(@RequestBody CreateSectionRequest request) {
+        try {
+            var result = adminScheduleService.createSection(request);
+            return ResponseEntity.ok(Map.of("message", "Thêm học phần thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/sections/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateAdminSection(@PathVariable Long id,
+                                                 @RequestBody CreateSectionRequest request) {
+        try {
+            var result = adminScheduleService.updateSection(id, request);
+            return ResponseEntity.ok(Map.of("message", "Cập nhật học phần thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/sections/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteAdminSection(@PathVariable Long id) {
+        try {
+            adminScheduleService.deleteSection(id);
+            return ResponseEntity.ok(Map.of("message", "Xóa học phần thành công"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/sections")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteAdminSectionsBulk(@RequestBody Map<String, List<Long>> request) {
+        try {
+            int count = adminScheduleService.deleteSectionsBulk(request.get("ids"));
+            return ResponseEntity.ok(Map.of("message", "Đã xóa " + count + " học phần"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Schedules within a Section ───────────────────────────────────────────
+
+    @PostMapping("/sections/{id}/schedules")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> addScheduleToSection(@PathVariable Long id,
+                                                   @RequestBody CreateSectionScheduleRequest request) {
+        try {
+            var result = adminScheduleService.addScheduleToSection(id, request);
+            return ResponseEntity.ok(Map.of("message", "Thêm lịch học thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/sections/schedules/{scheduleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateScheduleInSection(@PathVariable Long scheduleId,
+                                                      @RequestBody CreateSectionScheduleRequest request) {
+        try {
+            var result = adminScheduleService.updateScheduleInSection(scheduleId, request);
+            return ResponseEntity.ok(Map.of("message", "Cập nhật lịch học thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/sections/schedules/{scheduleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteScheduleInSection(@PathVariable Long scheduleId) {
+        try {
+            adminScheduleService.softDeleteSchedule(scheduleId);
+            return ResponseEntity.ok(Map.of("message", "Xóa lịch học thành công"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Students within a Section ────────────────────────────────────────────
+
+    @PutMapping("/sections/{id}/students")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateSectionStudents(@PathVariable Long id,
+                                                    @RequestBody Map<String, List<Long>> request) {
+        try {
+            var result = adminScheduleService.updateStudentsInSection(id, request.get("studentIds"));
+            return ResponseEntity.ok(Map.of("message", "Cập nhật danh sách sinh viên thành công", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/sections/{id}/students/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> previewSectionStudentsExcel(@PathVariable Long id,
+                                                          @RequestParam("file") MultipartFile file) {
+        try {
+            var result = adminScheduleService.previewSectionStudentsExcel(id, file);
+            return ResponseEntity.ok(Map.of("data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/sections/{id}/students/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> importSectionStudentsExcel(@PathVariable Long id,
+                                                         @RequestParam("file") MultipartFile file) {
+        try {
+            var result = adminScheduleService.importSectionStudentsExcel(id, file);
+            return ResponseEntity.ok(Map.of("message", "Import sinh viên hoàn tất", "data", result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    // ── Section Excel Import ─────────────────────────────────────────────────
+
+    @PostMapping("/sections/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> previewSectionsExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            return ResponseEntity.ok(Map.of("data", adminScheduleService.previewSectionExcel(file)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/sections/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> importSectionsExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            var result = adminScheduleService.importSectionExcel(file);
+            return ResponseEntity.ok(Map.of("message", "Import học phần hoàn tất", "data", result));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {

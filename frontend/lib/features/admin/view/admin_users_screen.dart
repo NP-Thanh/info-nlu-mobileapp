@@ -39,7 +39,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (!mounted) return;
       setState(() => _users = list);
     } on DioException catch (e) {
-      _snack(e.response?.data?['message'] ?? 'Không tải được danh sách');
+      _snack(e.response?.data?['message'] ?? 'Không tải được danh sách', isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -98,7 +98,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _fetch();
       _snack('Đã xóa ${_selectedIds.length} tài khoản');
     } on DioException catch (e) {
-      _snack(e.response?.data?['message'] ?? 'Xóa thất bại');
+      _snack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
@@ -184,7 +184,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         _snack('Tạo tài khoản thành công, mật khẩu đã gửi qua email');
                       } on DioException catch (e) {
                         setDialogState(() => saving = false);
-                        _snack(e.response?.data?['message'] ?? 'Tạo thất bại');
+                        _snack(e.response?.data?['message'] ?? 'Tạo thất bại', isError: true);
                       } catch (_) {
                         setDialogState(() => saving = false);
                       }
@@ -199,9 +199,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  void _snack(String msg) {
+  void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
   }
 
   String _formatDate(String? iso) {
@@ -271,11 +275,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : _users.isEmpty
                     ? const Center(child: Text('Không có tài khoản nào'))
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                        itemCount: _users.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
+                    : RefreshIndicator(
+                        onRefresh: _fetch,
+                        color: AppColors.primary,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          itemCount: _users.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
                           final u = _users[index];
                           final id = (u['id'] as num).toInt();
                           final selected = _selectedIds.contains(id);
@@ -351,7 +358,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                             ),
                           );
                         },
-                      ),
+                        ),  // ListView
+                      ),  // RefreshIndicator
           ),
         ],
       ),
