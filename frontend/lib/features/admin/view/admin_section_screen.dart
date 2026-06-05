@@ -182,7 +182,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
 
   Future<void> _previewAndImport() async {
     if (_importPath == null) {
-      _showSnack('Hãy chọn file Excel danh sách học phần');
+      _showSnack('Hãy chọn file Excel danh sách học phần', isError: true);
       return;
     }
     try {
@@ -205,7 +205,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
 
   Future<bool?> _showSectionImportPreviewDialog(Map<String, dynamic> preview) {
     if (preview.containsKey('error')) {
-      _showSnack(preview['error'].toString());
+      _showSnack(preview['error'].toString(), isError: true);
       return Future.value(false);
     }
     final rows = (preview['rows'] as List? ?? []).cast<Map>();
@@ -277,7 +277,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     );
   }
 
-  AppBar _normalAppBar() => AdminTheme.appBar(context, 'Quản lý học phần');
+  AppBar _normalAppBar() => AdminTheme.appBar(context, 'Quản lý lịch học');
 
   AppBar _selectionAppBar() => AppBar(
         backgroundColor: AppColors.primary,
@@ -1243,15 +1243,15 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
 
   Future<void> _submit() async {
     if (_selectedCourse == null) {
-      _showSnack('Vui lòng chọn môn học');
+      _showSnack('Vui lòng chọn môn học', isError: true);
       return;
     }
     if (_semesterCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng chọn học kỳ');
+      _showSnack('Vui lòng chọn học kỳ', isError: true);
       return;
     }
     if (_academicYearCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng nhập năm học');
+      _showSnack('Vui lòng nhập năm học', isError: true);
       return;
     }
     setState(() => _saving = true);
@@ -1498,11 +1498,11 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
 
   Future<void> _submit() async {
     if (_dayOfWeek == null) {
-      _showSnack('Vui lòng chọn thứ');
+      _showSnack('Vui lòng chọn thứ', isError: true);
       return;
     }
     if (_period == null) {
-      _showSnack('Vui lòng chọn ca học');
+      _showSnack('Vui lòng chọn ca học', isError: true);
       return;
     }
     setState(() => _saving = true);
@@ -1516,10 +1516,12 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
       if (widget.existing != null) {
         final scheduleId = (widget.existing!['scheduleId'] as num).toInt();
         await widget.repo.updateScheduleInSection(scheduleId, payload);
-        _showSnack('Cập nhật ca học thành công');
+        if (!mounted) return;
+        await AdminNotification.show(context, 'Cập nhật ca học thành công');
       } else {
         await widget.repo.addScheduleToSection(widget.sectionId, payload);
-        _showSnack('Thêm ca học thành công');
+        if (!mounted) return;
+        await AdminNotification.show(context, 'Thêm ca học thành công');
       }
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (e) {
@@ -1903,13 +1905,18 @@ class _SectionStudentImportScreenState extends State<_SectionStudentImportScreen
 
   Future<void> _doPreview() async {
     if (_importPath == null) {
-      _showSnack('Hãy chọn file Excel trước');
+      _showSnack('Hãy chọn file Excel trước', isError: true);
       return;
     }
     setState(() => _previewing = true);
     try {
       final data = await widget.repo.previewSectionStudentsExcel(widget.sectionId, _importPath!);
-      if (mounted) setState(() => _previewData = data);
+      if (!mounted) return;
+      if (data.containsKey('error')) {
+        _showSnack(data['error'].toString(), isError: true);
+        return;
+      }
+      setState(() => _previewData = data);
     } on DioException catch (e) {
       _showSnack(e.response?.data?['message'] ?? 'Preview thất bại', isError: true);
     } finally {

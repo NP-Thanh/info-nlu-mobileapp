@@ -192,6 +192,19 @@ public class AdminScheduleService {
             }
         }
 
+        // Kiểm tra conflict lịch học cho sinh viên đang đăng ký học phần này
+        List<Enrollment> enrollments = enrollmentRepository.findAllBySection_Id(section.getId());
+        for (Enrollment e : enrollments) {
+            List<Enrollment> conflicts = enrollmentRepository.findStudentConflicts(
+                    e.getStudent().getId(), semester, academicYear,
+                    newDay, newPeriod, section.getId());
+            if (!conflicts.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Sinh viên " + e.getStudent().getStudentCode() + " bị trùng ca " + newPeriod +
+                        " thứ " + newDay + " với môn khác");
+            }
+        }
+
         schedule.setDayOfWeek(newDay);
         schedule.setPeriod(newPeriod);
 
@@ -561,6 +574,19 @@ public class AdminScheduleService {
                     newLecturer, sec.getSemester(), sec.getAcademicYear(), newDay, newPeriod, scheduleId);
             if (lecturerConflict) throw new IllegalArgumentException(
                     "Giảng viên \"" + newLecturer + "\" đã có lịch dạy môn khác trong ca này");
+        }
+
+        // Kiểm tra conflict lịch học cho sinh viên đang đăng ký học phần này
+        List<Enrollment> enrollments = enrollmentRepository.findAllBySection_Id(sec.getId());
+        for (Enrollment e : enrollments) {
+            List<Enrollment> conflicts = enrollmentRepository.findStudentConflicts(
+                    e.getStudent().getId(), sec.getSemester(), sec.getAcademicYear(),
+                    newDay, newPeriod, sec.getId());
+            if (!conflicts.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Sinh viên " + e.getStudent().getStudentCode() + " bị trùng ca " + newPeriod +
+                        " thứ " + newDay + " với môn khác");
+            }
         }
 
         schedule.setDayOfWeek(newDay);

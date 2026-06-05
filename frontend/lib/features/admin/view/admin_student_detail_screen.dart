@@ -114,7 +114,7 @@ class _AdminStudentDetailScreenState extends State<AdminStudentDetailScreen> wit
                     controller: _tabController,
                     children: [
                       _InfoTab(student: _student!, onEdit: _openEdit),
-                      _ScheduleTab(studentId: widget.studentId, repo: _repo, onChanged: () => _changed = true),
+                      _ScheduleTab(studentId: widget.studentId, repo: _repo),
                       _GradesTab(studentId: widget.studentId, repo: _repo),
                     ],
                   ),
@@ -223,9 +223,8 @@ class _InfoTab extends StatelessWidget {
 class _ScheduleTab extends StatefulWidget {
   final int studentId;
   final AdminRepository repo;
-  final VoidCallback onChanged;
 
-  const _ScheduleTab({required this.studentId, required this.repo, required this.onChanged});
+  const _ScheduleTab({required this.studentId, required this.repo});
 
   @override
   State<_ScheduleTab> createState() => _ScheduleTabState();
@@ -274,84 +273,6 @@ class _ScheduleTabState extends State<_ScheduleTab> {
       return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
     } catch (_) {
       return iso;
-    }
-  }
-
-  Future<void> _editItem(Map<String, dynamic> item) async {
-    final room = TextEditingController(text: item['room']?.toString() ?? '');
-    final lecturer = TextEditingController(text: item['lecturer']?.toString() ?? '');
-    final day = TextEditingController(text: item['dayOfWeek']?.toString() ?? '');
-    final period = TextEditingController(text: item['period']?.toString() ?? '');
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Sửa lịch học'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: room, decoration: AdminTheme.inputDecoration('Phòng')),
-              const SizedBox(height: 8),
-              TextField(controller: lecturer, decoration: AdminTheme.inputDecoration('Giảng viên')),
-              const SizedBox(height: 8),
-              TextField(controller: day, keyboardType: TextInputType.number, decoration: AdminTheme.inputDecoration('Thứ (2-8)')),
-              const SizedBox(height: 8),
-              TextField(controller: period, keyboardType: TextInputType.number, decoration: AdminTheme.inputDecoration('Ca (1-4)')),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
-          ElevatedButton(
-            style: AdminTheme.primaryButtonStyle(),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Lưu'),
-          ),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
-    try {
-      await widget.repo.updateSchedule((item['scheduleId'] as num).toInt(), {
-        'room': room.text.trim(),
-        'lecturer': lecturer.text.trim(),
-        'dayOfWeek': int.tryParse(day.text.trim()),
-        'period': int.tryParse(period.text.trim()),
-      });
-      widget.onChanged();
-      _load();
-      _showSnack('Đã cập nhật lịch học');
-    } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Cập nhật thất bại', isError: true);
-    }
-  }
-
-  Future<void> _deleteItem(Map<String, dynamic> item) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Xóa lịch học'),
-        content: Text('Xóa buổi học ${item['courseName'] ?? ''}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
-          ElevatedButton(
-            style: AdminTheme.primaryButtonStyle().copyWith(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    try {
-      await widget.repo.deleteSchedule((item['scheduleId'] as num).toInt());
-      widget.onChanged();
-      _load();
-      _showSnack('Đã xóa lịch học');
-    } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Xóa thất bại', isError: true);
     }
   }
 
@@ -438,8 +359,6 @@ class _ScheduleTabState extends State<_ScheduleTab> {
                       item: item,
                       dayLabel: _dayLabel(day),
                       formatDate: _formatDate,
-                      onEdit: () => _editItem(item),
-                      onDelete: () => _deleteItem(item),
                     )),
                 const SizedBox(height: 12),
               ],
@@ -454,15 +373,11 @@ class _ScheduleLessonCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final String dayLabel;
   final String Function(String?) formatDate;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _ScheduleLessonCard({
     required this.item,
     required this.dayLabel,
     required this.formatDate,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   bool get _isLab {
@@ -534,18 +449,6 @@ class _ScheduleLessonCard extends StatelessWidget {
                 _scheduleRow(Icons.meeting_room_outlined, 'Phòng: ${item['room'] ?? '—'}', accent),
                 _scheduleRow(Icons.person_outline, 'GV: ${item['lecturer'] ?? '—'}', accent),
                 _scheduleRow(Icons.date_range_outlined, 'Môn: ${formatDate(item['enrollmentStartDate']?.toString())} → ${formatDate(item['enrollmentEndDate']?.toString())}', accent),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: onEdit,
-                      icon: Icon(Icons.edit_outlined, size: 18, color: accent),
-                      label: Text('Sửa', style: TextStyle(color: accent)),
-                    ),
-                    TextButton.icon(onPressed: onDelete, icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red), label: const Text('Xóa', style: TextStyle(color: Colors.red))),
-                  ],
-                ),
               ],
             ),
           ),

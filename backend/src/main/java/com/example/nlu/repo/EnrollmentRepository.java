@@ -156,14 +156,17 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Query("""
            SELECT e FROM Enrollment e
            JOIN e.section sec
-           JOIN Schedule sch ON sch.section.id = sec.id
            WHERE e.student.id = :studentId
              AND sec.semester = :semester
              AND sec.academicYear = :academicYear
-             AND sch.dayOfWeek = :dayOfWeek
-             AND sch.period = :period
-             AND (sch.isDeleted = false OR sch.isDeleted IS NULL)
              AND sec.id <> :excludeSectionId
+             AND EXISTS (
+               SELECT sch FROM Schedule sch
+               WHERE sch.section.id = sec.id
+                 AND sch.dayOfWeek = :dayOfWeek
+                 AND sch.period = :period
+                 AND (sch.isDeleted = false OR sch.isDeleted IS NULL)
+             )
            """)
     List<Enrollment> findStudentConflicts(
             @Param("studentId") Long studentId,
