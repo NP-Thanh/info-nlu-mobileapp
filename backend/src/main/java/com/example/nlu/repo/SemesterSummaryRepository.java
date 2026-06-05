@@ -27,4 +27,11 @@ public interface SemesterSummaryRepository extends JpaRepository<SemesterSummary
         WHERE ss.student.id = :studentId
     """)
     List<SemesterSummary> findAllByStudentId(@Param("studentId") Long studentId);
+
+    @Query("""
+        SELECT ss FROM SemesterSummary ss
+        WHERE ss.student.studentCode = :studentCode
+        ORDER BY ss.academicYear DESC, ss.semester DESC
+    """)
+    List<SemesterSummary> findAllByStudentCode(@Param("studentCode") String studentCode);
 }
