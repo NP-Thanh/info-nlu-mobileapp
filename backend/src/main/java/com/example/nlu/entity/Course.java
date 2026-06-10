@@ -21,4 +21,7 @@ public class Course {
     private String courseName;
 
     private Integer credits;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

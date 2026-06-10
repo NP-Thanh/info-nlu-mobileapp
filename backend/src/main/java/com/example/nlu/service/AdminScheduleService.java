@@ -376,7 +376,7 @@ public class AdminScheduleService {
                 if (courseCode == null || courseCode.isBlank()) {
                     error = "Thiếu mã môn học";
                 } else {
-                    var courseOpt = courseRepository.findByCourseCodeIgnoreCase(courseCode.trim());
+                    var courseOpt = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim());
                     if (courseOpt.isEmpty()) error = "Môn học không tồn tại: " + courseCode;
                     else {
                         rowData.put("courseName", courseOpt.get().getCourseName());
@@ -756,7 +756,7 @@ public class AdminScheduleService {
                 String error = null;
                 if (courseCode == null || courseCode.isBlank()) { error = "Thiếu mã môn học"; }
                 else {
-                    var courseOpt = courseRepository.findByCourseCodeIgnoreCase(courseCode.trim());
+                    var courseOpt = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim());
                     if (courseOpt.isEmpty()) error = "Môn học không tồn tại: " + courseCode;
                     else { rowData.put("courseName", courseOpt.get().getCourseName()); rowData.put("courseId", courseOpt.get().getId()); }
                 }

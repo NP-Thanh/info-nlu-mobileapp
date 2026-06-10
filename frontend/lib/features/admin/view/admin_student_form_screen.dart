@@ -124,7 +124,7 @@ class _AdminStudentFormScreenState extends State<AdminStudentFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_programId == null) {
-      _showSnack('Vui lòng chọn đủ khoa → ngành → chuyên ngành');
+      _showSnack('Vui lòng chọn đủ khoa → ngành → chuyên ngành', isError: true);
       return;
     }
 

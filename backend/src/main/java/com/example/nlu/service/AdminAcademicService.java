@@ -34,19 +34,24 @@ public class AdminAcademicService {
     private final SemesterSummaryRepository semesterSummaryRepository;
 
     public List<Course> getCourses() {
-        return courseRepository.findAll();
+        return courseRepository.findAllByIsDeletedFalse();
     }
 
     @Transactional
     public Course createCourse(String courseCode, String name, Integer credits) {
         validateCourseInput(courseCode, name, credits);
-        if (courseRepository.existsByCourseCodeIgnoreCase(courseCode)) {
+
+        // Nếu mã đã tồn tại và chưa bị xóa → báo trùng
+        if (courseRepository.existsByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim())) {
             throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode);
         }
-        Course course = new Course();
+        // Nếu mã đã bị soft-delete trước đó → restore lại thay vì tạo bản ghi mới
+        Optional<Course> deleted = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedTrue(courseCode.trim());
+        Course course = deleted.orElseGet(Course::new);
         course.setCourseCode(courseCode.trim());
         course.setCourseName(name.trim());
         course.setCredits(credits);
+        course.setIsDeleted(false);
         return courseRepository.save(course);
     }
 
@@ -55,8 +60,10 @@ public class AdminAcademicService {
         validateCourseInput(courseCode, name, credits);
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học"));
+        if (Boolean.TRUE.equals(course.getIsDeleted()))
+            throw new IllegalArgumentException("Môn học đã bị xóa, không thể cập nhật");
 
-        Optional<Course> existingByCode = courseRepository.findByCourseCodeIgnoreCase(courseCode.trim());
+        Optional<Course> existingByCode = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim());
         if (existingByCode.isPresent() && !existingByCode.get().getId().equals(id)) {
             throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode);
         }
@@ -70,7 +77,8 @@ public class AdminAcademicService {
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học"));
-        courseRepository.delete(course);
+        course.setIsDeleted(true);
+        courseRepository.save(course);
     }
 
     public Map<String, Object> previewCourses(MultipartFile file) {
@@ -101,6 +109,8 @@ public class AdminAcademicService {
 
                 try {
                     validateCourseInput(courseCode, name, credits);
+                    if (courseRepository.existsByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode != null ? courseCode.trim() : ""))
+                        throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode);
                     rowData.put("valid", true); rowData.put("error", null);
                     validRows.add(rowData);
                 } catch (Exception e) {
@@ -203,11 +213,15 @@ public class AdminAcademicService {
                     String name = getStringCell(row.getCell(1));
                     Integer credits = getIntCell(row.getCell(2));
                     validateCourseInput(courseCode, name, credits);
-                    Course course = courseRepository.findByCourseCodeIgnoreCase(courseCode.trim())
+                    if (courseRepository.existsByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim()))
+                        throw new IllegalArgumentException("Mã môn học đã tồn tại: " + courseCode.trim());
+                    // Nếu mã đã bị soft-delete → restore, không tạo bản ghi mới
+                    Course course = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedTrue(courseCode.trim())
                             .orElseGet(Course::new);
                     course.setCourseCode(courseCode.trim());
                     course.setCourseName(name.trim());
                     course.setCredits(credits);
+                    course.setIsDeleted(false);
                     courseRepository.save(course);
                     successCount++;
                 } catch (Exception e) {
@@ -482,7 +496,7 @@ public class AdminAcademicService {
 
     private Course getCourseByCode(String courseCode) {
         if (isBlank(courseCode)) throw new IllegalArgumentException("course_code không được để trống");
-        return courseRepository.findByCourseCodeIgnoreCase(courseCode.trim())
+        return courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học: " + courseCode));
     }
 

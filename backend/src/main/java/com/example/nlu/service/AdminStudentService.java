@@ -85,6 +85,8 @@ public class AdminStudentService {
             throw new IllegalArgumentException("Mã sinh viên không được để trống");
         if (isBlank(req.getEmail()))
             throw new IllegalArgumentException("Email không được để trống");
+        if (!req.getEmail().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))
+            throw new IllegalArgumentException("Email không đúng định dạng");
         if (req.getProgramId() == null)
             throw new IllegalArgumentException("Vui lòng chọn chương trình đào tạo (khoa - ngành - chuyên ngành)");
         if (isBlank(req.getClassName()))
@@ -95,8 +97,16 @@ public class AdminStudentService {
         if (userRepository.findByUsername(req.getStudentCode()).isPresent())
             throw new IllegalArgumentException("Tài khoản đã tồn tại: " + req.getStudentCode());
 
+        // Bắt buộc: họ tên, CCCD, nơi sinh
+        if (isBlank(req.getFullName()))
+            throw new IllegalArgumentException("Họ tên không được để trống");
+        if (isBlank(req.getCccd()))
+            throw new IllegalArgumentException("Số CCCD không được để trống");
+        if (isBlank(req.getPlaceOfBirth()))
+            throw new IllegalArgumentException("Nơi sinh không được để trống");
+
         validateStudentFields(req.getFullName(), req.getDateOfBirth(), req.getGender(),
-                req.getPhone(), req.getStartYear(), req.getEndYear());
+                req.getPhone(), req.getCccd(), req.getStartYear(), req.getEndYear());
 
         Program program = programRepository.findById(req.getProgramId())
                 .orElseThrow(() -> new IllegalArgumentException("Chương trình đào tạo không tồn tại"));
@@ -130,7 +140,7 @@ public class AdminStudentService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sinh viên với id: " + id));
 
         validateStudentFields(req.getFullName(), req.getDateOfBirth(), req.getGender(),
-                req.getPhone(), req.getStartYear(), req.getEndYear());
+                req.getPhone(), req.getCccd(), req.getStartYear(), req.getEndYear());
 
         if (!isBlank(req.getFullName())) student.setFullName(req.getFullName());
         if (req.getDateOfBirth() != null) student.setDateOfBirth(req.getDateOfBirth());
@@ -146,6 +156,8 @@ public class AdminStudentService {
         if (!isBlank(req.getStatus())) student.setStatus(parseStatus(req.getStatus()));
 
         if (!isBlank(req.getEmail()) && student.getUser() != null) {
+            if (!req.getEmail().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))
+                throw new IllegalArgumentException("Email không đúng định dạng");
             student.getUser().setEmail(req.getEmail());
             userRepository.save(student.getUser());
         }
@@ -212,7 +224,7 @@ public class AdminStudentService {
     }
 
     private void validateStudentFields(String fullName, LocalDate dateOfBirth,
-                                        String gender, String phone,
+                                        String gender, String phone, String cccd,
                                         Integer startYear, Integer endYear) {
         int currentYear = LocalDate.now().getYear();
 
@@ -235,6 +247,11 @@ public class AdminStudentService {
         if (!isBlank(phone)) {
             if (!phone.matches("^0\\d{9,10}$"))
                 throw new IllegalArgumentException("Số điện thoại phải gồm 10-11 số, bắt đầu bằng 0");
+        }
+
+        if (!isBlank(cccd)) {
+            if (!cccd.matches("^\\d{12}$"))
+                throw new IllegalArgumentException("Số CCCD phải gồm đúng 12 chữ số");
         }
 
         if (startYear != null && startYear > currentYear)
