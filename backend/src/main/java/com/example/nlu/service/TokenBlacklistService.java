@@ -13,6 +13,7 @@ import java.util.Date;
 public class TokenBlacklistService {
 
     private static final String PREFIX = "blacklist:";
+    private static final String REVOKE_PREFIX = "revoked_user:";
 
     private final StringRedisTemplate redisTemplate;
     private final JwtUtil jwtUtil;
@@ -29,5 +30,37 @@ public class TokenBlacklistService {
 
     public boolean isBlacklisted(String token) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + token));
+    }
+
+    /**
+     * Revoke tất cả token của một user theo username.
+     * Lưu timestamp revoke vào Redis với TTL = thời gian hết hạn token.
+     * JwtAuthFilter sẽ check xem token được cấp trước thời điểm này không.
+     */
+    public void revokeAllTokensForUser(String username, Duration tokenExpiration) {
+        long revokedAt = System.currentTimeMillis();
+        redisTemplate.opsForValue().set(
+                REVOKE_PREFIX + username,
+                String.valueOf(revokedAt),
+                tokenExpiration
+        );
+    }
+
+    /**
+     * Kiểm tra token có bị revoke theo username không.
+     * Token bị revoke nếu issuedAt < revokedAt timestamp.
+     */
+    public boolean isRevokedForUser(String token) {
+        try {
+            String username = jwtUtil.extractUsername(token);
+            String revokedAtStr = redisTemplate.opsForValue().get(REVOKE_PREFIX + username);
+            if (revokedAtStr == null) return false;
+            long revokedAt = Long.parseLong(revokedAtStr);
+            Date issuedAt = jwtUtil.extractIssuedAt(token);
+            if (issuedAt == null) return false;
+            return issuedAt.getTime() < revokedAt;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

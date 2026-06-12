@@ -46,15 +46,17 @@ public class GradeService {
 
         List<Grade> grades = gradeRepository.findByStudentAndSemester(studentCode, academicYear, semester);
 
-        Map<Long, Grade> gradeBySectionId = new HashMap<>();
+        // Map từ enrollmentId → Grade
+        Map<Long, Grade> gradeByEnrollmentId = new HashMap<>();
         for (Grade g : grades) {
-            gradeBySectionId.put(g.getSection().getId(), g);
+            gradeByEnrollmentId.put(g.getEnrollment().getId(), g);
         }
 
         Map<String, GradeItemResponse> itemByCode = new LinkedHashMap<>();
         for (Enrollment enrollment : enrollments) {
+            if (Boolean.TRUE.equals(enrollment.getSection().getIsLab())) continue; // bỏ qua TH
             String code = enrollment.getSection().getCourse().getCourseCode();
-            Grade g = gradeBySectionId.get(enrollment.getSection().getId());
+            Grade g = gradeByEnrollmentId.get(enrollment.getId());
 
             GradeItemResponse existing = itemByCode.get(code);
             if (existing == null) {

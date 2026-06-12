@@ -38,6 +38,10 @@ public class AuthService {
                     return new RuntimeException("Sai tài khoản hoặc mật khẩu");
                 });
 
+        if (Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
+        }
+
         log.info("User found: {}, stored hash: {}", user.getUsername(), user.getPassword());
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

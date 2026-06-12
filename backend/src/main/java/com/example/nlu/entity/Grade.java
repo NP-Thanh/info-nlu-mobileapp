@@ -5,7 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "grades")
+@Table(name = "grades",
+       uniqueConstraints = @UniqueConstraint(columnNames = "enrollment_id"))
 @Getter
 @Setter
 public class Grade {
@@ -14,9 +15,10 @@ public class Grade {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "section_id")
-    private Section section;
+    /** Mỗi bản ghi điểm gắn với một enrollment (student + section) cụ thể */
+    @OneToOne
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private Enrollment enrollment;
 
     @Column(name = "process_score")
     private Float processScore;

@@ -264,11 +264,12 @@ public class DataSeeder implements CommandLineRunner {
 
         for (GradeData gd : gradeList) {
             enrollments.stream()
-                    .filter(e -> e.getSection().getCourse().getCourseCode().equals(gd.courseCode()))
+                    .filter(e -> e.getSection().getCourse().getCourseCode().equals(gd.courseCode())
+                            && !Boolean.TRUE.equals(e.getSection().getIsLab()))
                     .findFirst()
                     .ifPresent(enrollment -> {
                         Grade grade = new Grade();
-                        grade.setSection(enrollment.getSection());
+                        grade.setEnrollment(enrollment);
                         grade.setProcessScore(gd.processScore());
                         grade.setExamScore(gd.examScore());
                         grade.setFinalScore10(gd.finalScore10());

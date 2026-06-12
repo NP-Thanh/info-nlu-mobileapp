@@ -10,15 +10,19 @@ import java.util.Optional;
 
 public interface GradeRepository extends JpaRepository<Grade, Long> {
 
-    /** Lấy điểm theo student + semester + year (qua enrollment -> section) */
+    /** Lấy điểm theo enrollment_id */
+    Optional<Grade> findByEnrollment_Id(Long enrollmentId);
+
+    /** Lấy tất cả điểm của một sinh viên trong một học kỳ/năm học */
     @Query("""
         SELECT g FROM Grade g
-        JOIN FETCH g.section s
+        JOIN FETCH g.enrollment e
+        JOIN FETCH e.section s
         JOIN FETCH s.course c
-        JOIN Enrollment e ON e.section.id = s.id
         WHERE e.student.studentCode = :studentCode
           AND s.academicYear = :academicYear
           AND s.semester = :semester
+          AND s.isLab = false
     """)
     List<Grade> findByStudentAndSemester(
             @Param("studentCode") String studentCode,
@@ -26,14 +30,13 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
             @Param("semester") String semester
     );
 
-    /** Lấy điểm theo danh sách sectionId */
+    /** Lấy tất cả điểm của student qua enrollment ids */
     @Query("""
         SELECT g FROM Grade g
-        JOIN FETCH g.section s
+        JOIN FETCH g.enrollment e
+        JOIN FETCH e.section s
         JOIN FETCH s.course c
-        WHERE s.id IN :sectionIds
+        WHERE e.id IN :enrollmentIds
     """)
-    List<Grade> findAllBySectionIds(@Param("sectionIds") List<Long> sectionIds);
-
-    Optional<Grade> findBySection_Id(Long sectionId);
+    List<Grade> findAllByEnrollmentIds(@Param("enrollmentIds") List<Long> enrollmentIds);
 }

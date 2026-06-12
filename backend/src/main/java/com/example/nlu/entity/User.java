@@ -30,4 +30,8 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    /** Soft delete — tài khoản admin bị vô hiệu hóa */
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

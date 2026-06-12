@@ -84,6 +84,9 @@ public class AdminNotificationService {
         if (request.getContent() == null || request.getContent().isBlank()) {
             throw new IllegalArgumentException("Nội dung không được để trống");
         }
+        if (request.getType() == null || request.getType().isBlank()) {
+            throw new IllegalArgumentException("Loại thông báo không được để trống");
+        }
 
         int count = 0;
         for (Long studentId : request.getStudentIds()) {

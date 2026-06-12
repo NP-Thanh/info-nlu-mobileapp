@@ -32,6 +32,19 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
            "WHERE s.id = :id")
     Optional<Schedule> findByIdWithDetails(@Param("id") Long id);
 
+    /** Kiểm tra trùng ca trong cùng một section (cùng ngày + ca) */
+    @Query("SELECT COUNT(s) > 0 FROM Schedule s " +
+           "WHERE s.section.id = :sectionId " +
+           "AND s.dayOfWeek = :dayOfWeek " +
+           "AND s.period = :period " +
+           "AND (:excludeId IS NULL OR s.id <> :excludeId) " +
+           "AND (s.isDeleted = false OR s.isDeleted IS NULL)")
+    boolean existsDuplicateInSection(
+            @Param("sectionId") Long sectionId,
+            @Param("dayOfWeek") int dayOfWeek,
+            @Param("period") int period,
+            @Param("excludeId") Long excludeId);
+
     /** Kiểm tra trùng lịch học (cùng môn, kỳ, năm, ngày, ca, phòng) */
     @Query("SELECT COUNT(s) > 0 FROM Schedule s " +
            "JOIN s.section sec " +

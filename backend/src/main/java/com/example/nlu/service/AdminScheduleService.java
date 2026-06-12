@@ -445,7 +445,7 @@ public class AdminScheduleService {
     }
 
     public AdminSectionDetailResponse getSectionDetail(Long sectionId) {
-        Section sec = sectionRepository.findById(sectionId)
+        Section sec = sectionRepository.findActiveById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
         return buildSectionDetail(sec);
     }
@@ -455,10 +455,11 @@ public class AdminScheduleService {
         if (req.getCourseId() == null) throw new IllegalArgumentException("Vui lòng chọn môn học");
         if (req.getSemester() == null || req.getSemester().isBlank()) throw new IllegalArgumentException("Vui lòng nhập học kỳ");
         if (req.getAcademicYear() == null || req.getAcademicYear().isBlank()) throw new IllegalArgumentException("Vui lòng nhập năm học");
+        validateSectionDates(req.getAcademicYear().trim(), req.getStartDate(), req.getEndDate());
         Course course = courseRepository.findById(req.getCourseId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học"));
         Boolean isLab = Boolean.TRUE.equals(req.getIsLab());
-        if (sectionRepository.existsByCourse_IdAndSemesterAndAcademicYearAndIsLab(
+        if (sectionRepository.existsByCourse_IdAndSemesterAndAcademicYearAndIsLabAndIsDeletedFalse(
                 req.getCourseId(), req.getSemester().trim(), req.getAcademicYear().trim(), isLab)) {
             throw new IllegalArgumentException("Học phần này đã tồn tại (cùng môn, kỳ, năm, loại LT/TH)");
         }
@@ -475,27 +476,68 @@ public class AdminScheduleService {
 
     @Transactional
     public AdminSectionDetailResponse updateSection(Long sectionId, CreateSectionRequest req) {
-        Section sec = sectionRepository.findById(sectionId)
+        Section sec = sectionRepository.findActiveById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
-        if (req.getStartDate() != null) sec.setStartDate(req.getStartDate());
-        if (req.getEndDate() != null) sec.setEndDate(req.getEndDate());
+        String academicYear = (req.getAcademicYear() != null && !req.getAcademicYear().isBlank())
+                ? req.getAcademicYear().trim() : sec.getAcademicYear();
+        LocalDate startDate = req.getStartDate() != null ? req.getStartDate() : sec.getStartDate();
+        LocalDate endDate = req.getEndDate() != null ? req.getEndDate() : sec.getEndDate();
+        validateSectionDates(academicYear, startDate, endDate);
+        sec.setAcademicYear(academicYear);
+        sec.setStartDate(startDate);
+        sec.setEndDate(endDate);
         if (req.getSemester() != null && !req.getSemester().isBlank()) sec.setSemester(req.getSemester().trim());
-        if (req.getAcademicYear() != null && !req.getAcademicYear().isBlank()) sec.setAcademicYear(req.getAcademicYear().trim());
         sectionRepository.save(sec);
         return buildSectionDetail(sec);
     }
 
+    /**
+     * Validate năm học, ngày bắt đầu, ngày kết thúc của một học phần.
+     * - academicYear phải đúng định dạng yyyy-yyyy và năm sau = năm trước + 1
+     * - startDate và endDate không được null
+     * - endDate phải sau startDate
+     * - startDate và endDate phải nằm trong phạm vi [01-01-yearStart, 31-12-yearEnd]
+     */
+    private void validateSectionDates(String academicYear, LocalDate startDate, LocalDate endDate) {
+        // Validate format yyyy-yyyy
+        if (!academicYear.matches("^\\d{4}-\\d{4}$"))
+            throw new IllegalArgumentException("Năm học phải theo định dạng yyyy-yyyy (ví dụ: 2025-2026)");
+        int yearStart = Integer.parseInt(academicYear.substring(0, 4));
+        int yearEnd   = Integer.parseInt(academicYear.substring(5));
+        if (yearEnd != yearStart + 1)
+            throw new IllegalArgumentException("Năm học không hợp lệ: năm sau phải bằng năm trước + 1 (ví dụ: 2025-2026)");
+
+        // Validate ngày không null
+        if (startDate == null) throw new IllegalArgumentException("Ngày bắt đầu không được để trống");
+        if (endDate == null)   throw new IllegalArgumentException("Ngày kết thúc không được để trống");
+
+        // Validate endDate > startDate
+        if (!endDate.isAfter(startDate))
+            throw new IllegalArgumentException("Ngày kết thúc phải sau ngày bắt đầu");
+
+        // Validate nằm trong phạm vi năm học
+        LocalDate rangeStart = LocalDate.of(yearStart, 1, 1);
+        LocalDate rangeEnd   = LocalDate.of(yearEnd, 12, 31);
+        if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd))
+            throw new IllegalArgumentException(
+                    "Ngày bắt đầu phải nằm trong năm học " + academicYear
+                    + " (từ " + rangeStart + " đến " + rangeEnd + ")");
+        if (endDate.isBefore(rangeStart) || endDate.isAfter(rangeEnd))
+            throw new IllegalArgumentException(
+                    "Ngày kết thúc phải nằm trong năm học " + academicYear
+                    + " (từ " + rangeStart + " đến " + rangeEnd + ")");
+    }
+
     @Transactional
     public void deleteSection(Long sectionId) {
-        Section sec = sectionRepository.findById(sectionId)
+        Section sec = sectionRepository.findActiveById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
         // Soft delete tất cả schedules thuộc section
         scheduleRepository.findActiveBySectionId(sectionId)
                 .forEach(s -> { s.setIsDeleted(true); scheduleRepository.save(s); });
-        // Xóa enrollments
-        enrollmentRepository.findAllBySection_Id(sectionId)
-                .forEach(enrollmentRepository::delete);
-        sectionRepository.delete(sec);
+        // Soft delete section
+        sec.setIsDeleted(true);
+        sectionRepository.save(sec);
     }
 
     @Transactional
@@ -508,18 +550,18 @@ public class AdminScheduleService {
 
     @Transactional
     public AdminSectionDetailResponse addScheduleToSection(Long sectionId, CreateSectionScheduleRequest req) {
-        Section sec = sectionRepository.findById(sectionId)
+        Section sec = sectionRepository.findActiveById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
         if (req.getDayOfWeek() == null || req.getDayOfWeek() < 2 || req.getDayOfWeek() > 8)
             throw new IllegalArgumentException("Thứ trong tuần không hợp lệ (2-8)");
         if (req.getPeriod() == null || req.getPeriod() < 1 || req.getPeriod() > 4)
             throw new IllegalArgumentException("Ca học không hợp lệ (1-4)");
+        validateRoomAndLecturer(req.getRoom(), req.getLecturer());
 
-        // Kiểm tra trùng lịch trong section này
-        boolean dup = scheduleRepository.existsDuplicateSchedule(
-                sec.getCourse().getId(), sec.getSemester(), sec.getAcademicYear(),
-                req.getDayOfWeek(), req.getPeriod(), req.getRoom(), null);
-        if (dup) throw new IllegalArgumentException("Ca học này đã tồn tại cho môn học trong học kỳ/phòng đó");
+        // Kiểm tra trùng ca trong cùng section này (cùng ngày + ca)
+        if (scheduleRepository.existsDuplicateInSection(sectionId, req.getDayOfWeek(), req.getPeriod(), null))
+            throw new IllegalArgumentException(
+                    "Học phần này đã có ca học vào " + _dayLabel(req.getDayOfWeek()) + " ca " + req.getPeriod());
 
         if (req.getLecturer() != null && !req.getLecturer().isBlank()) {
             boolean lecturerConflict = scheduleRepository.existsLecturerConflict(
@@ -561,13 +603,16 @@ public class AdminScheduleService {
         int newPeriod = req.getPeriod() != null ? req.getPeriod() : schedule.getPeriod();
         if (newDay < 2 || newDay > 8) throw new IllegalArgumentException("Thứ trong tuần không hợp lệ (2-8)");
         if (newPeriod < 1 || newPeriod > 4) throw new IllegalArgumentException("Ca học không hợp lệ (1-4)");
-        String newRoom = req.getRoom() != null ? req.getRoom() : schedule.getRoom();
-        String newLecturer = req.getLecturer() != null ? req.getLecturer() : schedule.getLecturer();
+        String newRoom = (req.getRoom() != null && !req.getRoom().isBlank())
+                ? req.getRoom().trim() : schedule.getRoom();
+        String newLecturer = (req.getLecturer() != null && !req.getLecturer().isBlank())
+                ? req.getLecturer().trim() : schedule.getLecturer();
+        validateRoomAndLecturer(newRoom, newLecturer);
 
-        boolean dup = scheduleRepository.existsDuplicateSchedule(
-                sec.getCourse().getId(), sec.getSemester(), sec.getAcademicYear(),
-                newDay, newPeriod, newRoom, scheduleId);
-        if (dup) throw new IllegalArgumentException("Ca học này đã tồn tại cho môn học trong học kỳ/phòng đó");
+        // Kiểm tra trùng ca trong cùng section này (cùng ngày + ca, bỏ qua ca đang sửa)
+        if (scheduleRepository.existsDuplicateInSection(sec.getId(), newDay, newPeriod, scheduleId))
+            throw new IllegalArgumentException(
+                    "Học phần này đã có ca học vào " + _dayLabel(newDay) + " ca " + newPeriod);
 
         if (newLecturer != null && !newLecturer.isBlank()) {
             boolean lecturerConflict = scheduleRepository.existsLecturerConflict(
@@ -601,7 +646,7 @@ public class AdminScheduleService {
 
     @Transactional
     public AdminSectionDetailResponse updateStudentsInSection(Long sectionId, List<Long> studentIds) {
-        Section sec = sectionRepository.findById(sectionId)
+        Section sec = sectionRepository.findActiveById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
         // Lấy schedules của section để check conflict
         List<Schedule> schedules = scheduleRepository.findActiveBySectionId(sectionId);
@@ -638,185 +683,6 @@ public class AdminScheduleService {
             }
         }
         return buildSectionDetail(sec);
-    }
-
-    /** Preview import sinh viên từ Excel (cột mssv, full_name) */
-    public Map<String, Object> previewStudentExcel(Long sectionId, MultipartFile file) throws IOException {
-        sectionRepository.findById(sectionId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
-        return parseStudentExcel(file, sectionId);
-    }
-
-    /** Alias dùng cho controller */
-    public Map<String, Object> previewSectionStudentsExcel(Long sectionId, MultipartFile file) throws IOException {
-        return previewStudentExcel(sectionId, file);
-    }
-
-    @Transactional
-    public Map<String, Object> importSectionStudentsExcel(Long sectionId, MultipartFile file) throws IOException {
-        Map<String, Object> preview = previewStudentExcel(sectionId, file);
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> rows = (List<Map<String, Object>>) preview.get("rows");
-        Section sec = sectionRepository.findById(sectionId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học phần"));
-        List<Schedule> schedules = scheduleRepository.findActiveBySectionId(sectionId);
-        int success = 0;
-        for (Map<String, Object> row : rows) {
-            if (!Boolean.TRUE.equals(row.get("valid"))) continue;
-            try {
-                Long studentId = ((Number) row.get("studentId")).longValue();
-                if (enrollmentRepository.existsByStudent_IdAndSection_Id(studentId, sectionId)) {
-                    success++; continue;
-                }
-                Student student = studentRepository.findById(studentId)
-                        .orElseThrow(() -> new IllegalArgumentException("SV không tồn tại"));
-                for (Schedule sch : schedules) {
-                    List<Enrollment> conflicts = enrollmentRepository.findStudentConflicts(
-                            studentId, sec.getSemester(), sec.getAcademicYear(),
-                            sch.getDayOfWeek(), sch.getPeriod(), sectionId);
-                    if (!conflicts.isEmpty())
-                        throw new IllegalArgumentException(
-                                "Sinh viên " + student.getStudentCode() + " bị trùng ca");
-                }
-                Enrollment e = new Enrollment();
-                e.setStudent(student);
-                e.setSection(sec);
-                enrollmentRepository.save(e);
-                success++;
-            } catch (Exception ignored) {}
-        }
-        Map<String, Object> result = new LinkedHashMap<>(preview);
-        result.put("successCount", success);
-        return result;
-    }
-
-    /** Preview import sections từ Excel */
-    public Map<String, Object> previewSectionExcel(MultipartFile file) throws IOException {
-        return parseSectionExcel(file);
-    }
-
-    @Transactional
-    public Map<String, Object> importSectionExcel(MultipartFile file) throws IOException {
-        Map<String, Object> preview = parseSectionExcel(file);
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> rows = (List<Map<String, Object>>) preview.get("rows");
-        int success = 0;
-        for (Map<String, Object> row : rows) {
-            if (Boolean.TRUE.equals(row.get("valid"))) {
-                try {
-                    CreateSectionRequest req = new CreateSectionRequest();
-                    req.setCourseId(((Number) row.get("courseId")).longValue());
-                    req.setIsLab(Boolean.TRUE.equals(row.get("isLab")));
-                    req.setSemester(row.get("semester").toString());
-                    req.setAcademicYear(row.get("academicYear").toString());
-                    if (row.get("startDate") != null) req.setStartDate(LocalDate.parse(row.get("startDate").toString()));
-                    if (row.get("endDate") != null) req.setEndDate(LocalDate.parse(row.get("endDate").toString()));
-                    createSection(req);
-                    success++;
-                } catch (Exception ignored) {}
-            }
-        }
-        Map<String, Object> result = new LinkedHashMap<>(preview);
-        result.put("successCount", success);
-        return result;
-    }
-
-    private Map<String, Object> parseSectionExcel(MultipartFile file) throws IOException {
-        List<String> REQUIRED = List.of("course_code", "is_lab", "semester", "academic_year");
-        List<Map<String, Object>> rows = new ArrayList<>();
-        int validCount = 0, invalidCount = 0;
-        try (Workbook wb = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = wb.getSheetAt(0);
-            Row headerRow = sheet.getRow(0);
-            if (headerRow == null) return Map.of("rows", rows, "validCount", 0, "invalidCount", 0,
-                    "error", "File không có dòng tiêu đề");
-            Map<String, Integer> colIndex = new LinkedHashMap<>();
-            for (Cell cell : headerRow)
-                colIndex.put(cell.getStringCellValue().trim().toLowerCase().replace(" ", "_"), cell.getColumnIndex());
-            for (String req : REQUIRED)
-                if (!colIndex.containsKey(req))
-                    return Map.of("rows", rows, "validCount", 0, "invalidCount", 0,
-                            "error", "Thiếu cột: " + req + ". Cần: " + String.join(", ", REQUIRED));
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-                String courseCode = getCellString(row, colIndex, "course_code");
-                String isLabStr = getCellString(row, colIndex, "is_lab");
-                String semester = getCellString(row, colIndex, "semester");
-                String academicYear = getCellString(row, colIndex, "academic_year");
-                String startDateStr = getCellString(row, colIndex, "start_date");
-                String endDateStr = getCellString(row, colIndex, "end_date");
-                Map<String, Object> rowData = new LinkedHashMap<>();
-                rowData.put("row", i + 1);
-                rowData.put("courseCode", courseCode);
-                rowData.put("semester", semester);
-                rowData.put("academicYear", academicYear);
-                rowData.put("startDate", startDateStr);
-                rowData.put("endDate", endDateStr);
-                String error = null;
-                if (courseCode == null || courseCode.isBlank()) { error = "Thiếu mã môn học"; }
-                else {
-                    var courseOpt = courseRepository.findByCourseCodeIgnoreCaseAndIsDeletedFalse(courseCode.trim());
-                    if (courseOpt.isEmpty()) error = "Môn học không tồn tại: " + courseCode;
-                    else { rowData.put("courseName", courseOpt.get().getCourseName()); rowData.put("courseId", courseOpt.get().getId()); }
-                }
-                if (error == null && (semester == null || semester.isBlank())) error = "Thiếu học kỳ";
-                if (error == null && (academicYear == null || academicYear.isBlank())) error = "Thiếu năm học";
-                boolean isLab = "true".equalsIgnoreCase(isLabStr) || "1".equals(isLabStr) || "th".equalsIgnoreCase(isLabStr);
-                rowData.put("isLab", isLab);
-                if (error == null) { rowData.put("valid", true); validCount++; }
-                else { rowData.put("valid", false); rowData.put("error", error); invalidCount++; }
-                rows.add(rowData);
-            }
-        }
-        return Map.of("rows", rows, "validCount", validCount, "invalidCount", invalidCount);
-    }
-
-    private Map<String, Object> parseStudentExcel(MultipartFile file, Long sectionId) throws IOException {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        int validCount = 0, invalidCount = 0;
-        try (Workbook wb = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = wb.getSheetAt(0);
-            Row headerRow = sheet.getRow(0);
-            if (headerRow == null) return Map.of("rows", rows, "validCount", 0, "invalidCount", 0,
-                    "error", "File không có dòng tiêu đề");
-            Map<String, Integer> colIndex = new LinkedHashMap<>();
-            for (Cell cell : headerRow)
-                colIndex.put(cell.getStringCellValue().trim().toLowerCase().replace(" ", "_"), cell.getColumnIndex());
-            if (!colIndex.containsKey("mssv"))
-                return Map.of("rows", rows, "validCount", 0, "invalidCount", 0,
-                        "error", "Thiếu cột bắt buộc: mssv. Cần: mssv, full_name");
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-                String mssv = getCellString(row, colIndex, "mssv");
-                String fullName = getCellString(row, colIndex, "full_name");
-                Map<String, Object> rowData = new LinkedHashMap<>();
-                rowData.put("row", i + 1);
-                rowData.put("mssv", mssv);
-                rowData.put("fullName", fullName);
-                String error = null;
-                boolean nameMatch = false;
-                if (mssv == null || mssv.isBlank()) { error = "Thiếu MSSV"; }
-                else {
-                    var studentOpt = studentRepository.findByStudentCode(mssv.trim());
-                    if (studentOpt.isEmpty()) { error = "MSSV không tồn tại trên hệ thống"; }
-                    else {
-                        rowData.put("studentId", studentOpt.get().getId());
-                        rowData.put("systemName", studentOpt.get().getFullName());
-                        // Kiểm tra tên có khớp không
-                        if (fullName != null && !fullName.isBlank()) {
-                            nameMatch = fullName.trim().equalsIgnoreCase(studentOpt.get().getFullName());
-                        }
-                        rowData.put("nameMatch", nameMatch);
-                    }
-                }
-                if (error == null) { rowData.put("valid", true); validCount++; }
-                else { rowData.put("valid", false); rowData.put("error", error); invalidCount++; }
-                rows.add(rowData);
-            }
-        }
-        return Map.of("rows", rows, "validCount", validCount, "invalidCount", invalidCount);
     }
 
     private AdminSectionDetailResponse buildSectionDetail(Section sec) {
@@ -864,6 +730,33 @@ public class AdminScheduleService {
         if (academicYear == null || academicYear.isBlank()) throw new IllegalArgumentException("Vui lòng nhập năm học");
         if (dayOfWeek == null || dayOfWeek < 2 || dayOfWeek > 8) throw new IllegalArgumentException("Thứ trong tuần không hợp lệ (2-8)");
         if (period == null || period < 1 || period > 4) throw new IllegalArgumentException("Ca học không hợp lệ (1-4)");
+    }
+
+    private String _dayLabel(int day) {
+        return switch (day) {
+            case 2 -> "Thứ 2"; case 3 -> "Thứ 3"; case 4 -> "Thứ 4";
+            case 5 -> "Thứ 5"; case 6 -> "Thứ 6"; case 7 -> "Thứ 7";
+            default -> "Chủ nhật";
+        };
+    }
+
+    /**
+     * Validate phòng học và giảng viên:
+     * - Không được rỗng
+     * - Tên giảng viên chỉ chứa chữ cái, khoảng trắng và dấu tiếng Việt (không có số hay ký tự đặc biệt)
+     * - Tên phòng không chứa ký tự đặc biệt (chỉ chữ cái, số, dấu cách, dấu gạch ngang)
+     */
+    private void validateRoomAndLecturer(String room, String lecturer) {
+        if (room == null || room.isBlank())
+            throw new IllegalArgumentException("Phòng học không được để trống");
+        if (lecturer == null || lecturer.isBlank())
+            throw new IllegalArgumentException("Giảng viên không được để trống");
+        // Phòng: chỉ cho phép chữ cái, số, khoảng trắng, dấu chấm, dấu gạch ngang
+        if (!room.trim().matches("[\\p{L}\\d\\s.\\-]+"))
+            throw new IllegalArgumentException("Tên phòng không được chứa ký tự đặc biệt");
+        // Giảng viên: chỉ chữ cái (bao gồm Unicode/tiếng Việt) và khoảng trắng, không có số
+        if (!lecturer.trim().matches("[\\p{L}\\s]+"))
+            throw new IllegalArgumentException("Tên giảng viên không được chứa số hoặc ký tự đặc biệt");
     }
 
     private List<StudentInScheduleResponse> buildStudentList(Long sectionId) {

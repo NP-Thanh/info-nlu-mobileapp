@@ -10,7 +10,11 @@ import java.util.Optional;
 
 public interface SectionRepository extends JpaRepository<Section, Long> {
 
-    /** Tìm section theo course + semester + year + isLab */
+    /** Tìm section active theo id */
+    @Query("SELECT s FROM Section s WHERE s.id = :id AND s.isDeleted = false")
+    Optional<Section> findActiveById(@Param("id") Long id);
+
+    /** Tìm section theo course + semester + year + isLab (chỉ active) */
     @Query("""
            SELECT s FROM Section s
            JOIN FETCH s.course c
@@ -18,6 +22,7 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
              AND s.semester = :semester
              AND s.academicYear = :academicYear
              AND s.isLab = :isLab
+             AND s.isDeleted = false
            """)
     List<Section> findByCourseAndSemesterAndYear(
             @Param("courseId") Long courseId,
@@ -25,22 +30,23 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
             @Param("academicYear") String academicYear,
             @Param("isLab") Boolean isLab);
 
-    /** Kiểm tra đã tồn tại section chưa */
-    boolean existsByCourse_IdAndSemesterAndAcademicYearAndIsLab(
+    /** Kiểm tra đã tồn tại section active chưa */
+    boolean existsByCourse_IdAndSemesterAndAcademicYearAndIsLabAndIsDeletedFalse(
             Long courseId, String semester, String academicYear, Boolean isLab);
 
-    /** Tìm section LT (isLab=false) theo course + semester + year */
-    Optional<Section> findTopByCourse_IdAndSemesterAndAcademicYearAndIsLabFalseOrderByIdDesc(
+    /** Tìm section LT (isLab=false) active theo course + semester + year */
+    Optional<Section> findTopByCourse_IdAndSemesterAndAcademicYearAndIsLabFalseAndIsDeletedFalseOrderByIdDesc(
             Long courseId, String semester, String academicYear);
 
-    /** Tìm section LT (isLab=false) mới nhất theo course (không cần term) */
-    Optional<Section> findTopByCourse_IdAndIsLabFalseOrderByIdDesc(Long courseId);
+    /** Tìm section LT (isLab=false) active mới nhất theo course (không cần term) */
+    Optional<Section> findTopByCourse_IdAndIsLabFalseAndIsDeletedFalseOrderByIdDesc(Long courseId);
 
-    /** Lấy tất cả sections với course, lọc keyword/semester/academicYear */
+    /** Lấy tất cả sections active với course, lọc keyword/semester/academicYear */
     @Query("""
            SELECT s FROM Section s
            JOIN FETCH s.course c
-           WHERE (:courseKeyword IS NULL
+           WHERE s.isDeleted = false
+             AND (:courseKeyword IS NULL
                   OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :courseKeyword, '%'))
                   OR LOWER(c.courseName) LIKE LOWER(CONCAT('%', :courseKeyword, '%')))
              AND (:semester IS NULL OR s.semester = :semester)
@@ -52,7 +58,7 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
             @Param("semester") String semester,
             @Param("academicYear") String academicYear);
 
-    /** Các năm học phân biệt từ sections */
-    @Query("SELECT DISTINCT s.academicYear FROM Section s ORDER BY s.academicYear DESC")
+    /** Các năm học phân biệt từ sections active */
+    @Query("SELECT DISTINCT s.academicYear FROM Section s WHERE s.isDeleted = false ORDER BY s.academicYear DESC")
     List<String> findDistinctAcademicYears();
 }

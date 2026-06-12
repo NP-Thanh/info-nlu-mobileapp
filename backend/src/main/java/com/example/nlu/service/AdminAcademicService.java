@@ -9,7 +9,6 @@ import com.example.nlu.entity.Student;
 import com.example.nlu.repo.CourseRepository;
 import com.example.nlu.repo.EnrollmentRepository;
 import com.example.nlu.repo.GradeRepository;
-import com.example.nlu.repo.SectionRepository;
 import com.example.nlu.repo.SemesterSummaryRepository;
 import com.example.nlu.repo.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,6 @@ public class AdminAcademicService {
 
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
-    private final SectionRepository sectionRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final GradeRepository gradeRepository;
     private final SemesterSummaryRepository semesterSummaryRepository;
@@ -136,7 +134,7 @@ public class AdminAcademicService {
             throw new IllegalArgumentException("File excel không được để trống");
         if (isBlank(courseCode))
             throw new IllegalArgumentException("course_code không được để trống");
-        getCourseByCode(courseCode);
+        Course course = getCourseByCode(courseCode);
 
         List<Map<String, Object>> validRows = new ArrayList<>();
         List<Map<String, Object>> invalidRows = new ArrayList<>();
@@ -171,7 +169,17 @@ public class AdminAcademicService {
                     validateTerm(academicYear, semester);
                     validateScore(processScore, "Điểm quá trình");
                     validateScore(examScore, "Điểm thi");
-                    getStudentByCode(studentCode);
+
+                    Student student = getStudentByCode(studentCode);
+
+                    // Kiểm tra sinh viên có enrollment LT cho môn này trong học kỳ không
+                    enrollmentRepository
+                            .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
+                                    student.getId(), course.getId(), academicYear.trim(), semester.trim())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Sinh viên " + studentCode + " không có đăng ký lý thuyết môn " + courseCode
+                                    + " trong HK " + semester + " - " + academicYear));
+
                     rowData.put("valid", true); rowData.put("error", null);
                     validRows.add(rowData);
                 } catch (Exception e) {
@@ -345,31 +353,27 @@ public class AdminAcademicService {
         validateScore(processScore, "Điểm quá trình");
         validateScore(examScore, "Điểm thi");
 
-        Section section;
+        // Tìm enrollment LT (is_lab=false) của sinh viên trong môn + học kỳ
+        Enrollment enrollment;
         if (!isBlank(academicYear) && !isBlank(semester)) {
-            // Tìm section LT (is_lab=false) theo course + term
-            section = sectionRepository
-                    .findTopByCourse_IdAndSemesterAndAcademicYearAndIsLabFalseOrderByIdDesc(
-                            course.getId(), semester.trim(), academicYear.trim())
+            enrollment = enrollmentRepository
+                    .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
+                            student.getId(), course.getId(), academicYear.trim(), semester.trim())
                     .orElseThrow(() -> new IllegalArgumentException(
-                            "Không tìm thấy section lý thuyết (is_lab=0) cho môn học trong học kỳ/năm học đã chọn"
-                    ));
+                            "Sinh viên " + student.getStudentCode()
+                            + " không có đăng ký lý thuyết môn " + course.getCourseCode()
+                            + " trong HK " + semester + " - " + academicYear));
         } else {
-            // Tìm section LT mới nhất theo course
-            section = sectionRepository
-                    .findTopByCourse_IdAndIsLabFalseOrderByIdDesc(course.getId())
-                    .orElseGet(() -> {
-                        Section sec = new Section();
-                        sec.setCourse(course);
-                        sec.setSemester("");
-                        sec.setAcademicYear("");
-                        sec.setIsLab(false);
-                        return sectionRepository.save(sec);
-                    });
+            enrollment = enrollmentRepository
+                    .findTopByStudent_IdAndCourse_IdAndIsLabFalseOrderByIdDesc(
+                            student.getId(), course.getId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Sinh viên " + student.getStudentCode()
+                            + " chưa đăng ký môn " + course.getCourseCode()));
         }
 
-        Grade grade = gradeRepository.findBySection_Id(section.getId()).orElseGet(Grade::new);
-        grade.setSection(section);
+        Grade grade = gradeRepository.findByEnrollment_Id(enrollment.getId()).orElseGet(Grade::new);
+        grade.setEnrollment(enrollment);
         grade.setProcessScore(processScore);
         grade.setExamScore(examScore);
 
@@ -387,17 +391,17 @@ public class AdminAcademicService {
 
         Map<String, Grade> gradeByCourseCode = new LinkedHashMap<>();
         for (Grade grade : grades) {
-            if (grade.getSection() == null || grade.getSection().getCourse() == null) continue;
-            String courseCode = grade.getSection().getCourse().getCourseCode();
+            Section sec = grade.getEnrollment() != null ? grade.getEnrollment().getSection() : null;
+            if (sec == null || sec.getCourse() == null) continue;
+            String courseCode = sec.getCourse().getCourseCode();
             if (isBlank(courseCode) || grade.getFinalScore10() == null || grade.getFinalScore4() == null) continue;
             Grade existing = gradeByCourseCode.get(courseCode);
-            boolean isCurrentTheory = grade.getSection().getIsLab() == null
-                    || !grade.getSection().getIsLab();
+            boolean isCurrentTheory = sec.getIsLab() == null || !sec.getIsLab();
             if (existing == null) {
                 gradeByCourseCode.put(courseCode, grade);
             } else {
-                boolean existingTheory = existing.getSection().getIsLab() == null
-                        || !existing.getSection().getIsLab();
+                Section existingSec = existing.getEnrollment().getSection();
+                boolean existingTheory = existingSec.getIsLab() == null || !existingSec.getIsLab();
                 if (!existingTheory && isCurrentTheory) {
                     gradeByCourseCode.put(courseCode, grade);
                 }
@@ -408,7 +412,7 @@ public class AdminAcademicService {
         int gradedCredits = 0, passedCredits = 0;
 
         for (Grade grade : gradeByCourseCode.values()) {
-            Integer credits = grade.getSection().getCourse().getCredits();
+            Integer credits = grade.getEnrollment().getSection().getCourse().getCredits();
             if (credits == null || credits <= 0) continue;
             weighted10 += grade.getFinalScore10() * credits;
             weighted4 += grade.getFinalScore4() * credits;

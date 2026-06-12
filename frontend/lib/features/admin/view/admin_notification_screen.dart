@@ -17,9 +17,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
 
   List<Map<String, dynamic>> _notifications = [];
   List<String> _typeOptions = [];
-  List<String> _titleOptions = [];
   String? _filterType;
-  String? _filterTitle;
   bool _loading = true;
 
   bool _selectionMode = false;
@@ -52,7 +50,6 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
       if (!mounted) return;
       setState(() {
         _typeOptions = List<String>.from(opts['types'] as List? ?? []);
-        _titleOptions = List<String>.from(opts['titles'] as List? ?? []);
       });
     } catch (_) {}
   }
@@ -64,7 +61,6 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
       final list = await _repo.getAdminNotifications(
         content: _contentController.text,
         type: _filterType,
-        title: _filterTitle,
       );
       if (!mounted) return;
       setState(() => _notifications = list);
@@ -178,7 +174,6 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
     _contentController.clear();
     setState(() {
       _filterType = null;
-      _filterTitle = null;
     });
     _fetchNotifications();
   }
@@ -286,19 +281,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _DropdownFilter(
-                  hint: 'Tiêu đề',
-                  value: _filterTitle,
-                  items: _titleOptions,
-                  onChanged: (v) {
-                    setState(() => _filterTitle = v);
-                    _fetchNotifications();
-                  },
-                ),
-              ),
-              if (_contentController.text.isNotEmpty || _filterType != null || _filterTitle != null) ...[
+              if (_contentController.text.isNotEmpty || _filterType != null) ...[
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _resetFilters,
@@ -736,7 +719,7 @@ class _SendNotificationScreen extends StatefulWidget {
 class _SendNotificationScreenState extends State<_SendNotificationScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  final _typeController = TextEditingController();
+  String? _selectedType;
   final _studentSearchController = TextEditingController();
 
   List<Map<String, dynamic>> _allStudents = [];
@@ -757,7 +740,6 @@ class _SendNotificationScreenState extends State<_SendNotificationScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-    _typeController.dispose();
     _studentSearchController.dispose();
     super.dispose();
   }
@@ -801,7 +783,6 @@ class _SendNotificationScreenState extends State<_SendNotificationScreen> {
   Future<void> _send() async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
-    final type = _typeController.text.trim();
 
     if (title.isEmpty) {
       AdminNotification.showError(context, 'Vui lòng nhập tiêu đề');
@@ -809,6 +790,10 @@ class _SendNotificationScreenState extends State<_SendNotificationScreen> {
     }
     if (content.isEmpty) {
       AdminNotification.showError(context, 'Vui lòng nhập nội dung');
+      return;
+    }
+    if (_selectedType == null || _selectedType!.isEmpty) {
+      AdminNotification.showError(context, 'Vui lòng chọn loại thông báo');
       return;
     }
     if (_selectedStudentIds.isEmpty) {
@@ -821,7 +806,7 @@ class _SendNotificationScreenState extends State<_SendNotificationScreen> {
       final msg = await widget.repo.sendAdminNotification(
         title: title,
         content: content,
-        type: type.isEmpty ? null : type,
+        type: _selectedType,
         studentIds: _selectedStudentIds.toList(),
       );
       if (!mounted) return;
@@ -859,8 +844,17 @@ class _SendNotificationScreenState extends State<_SendNotificationScreen> {
             decoration: _inputDecoration('Nhập nội dung thông báo...'),
           ),
           const SizedBox(height: 16),
-          _label('Loại thông báo'),
-          _textField(_typeController, 'VD: schedule, grade, general...'),
+          _label('Loại thông báo *'),
+          DropdownButtonFormField<String>(
+            value: _selectedType,
+            decoration: _inputDecoration('Chọn loại thông báo'),
+            items: const [
+              DropdownMenuItem(value: 'SYSTEM', child: Text('Schedule — Lịch học')),
+              DropdownMenuItem(value: 'grade', child: Text('Grade — Điểm số')),
+              DropdownMenuItem(value: 'general', child: Text('General — Thông báo chung')),
+            ],
+            onChanged: (v) => setState(() => _selectedType = v),
+          ),
           const SizedBox(height: 24),
           // Chọn sinh viên button
           OutlinedButton.icon(

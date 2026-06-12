@@ -42,4 +42,8 @@ public class Section {
     /** true nếu là nhóm thực hành (TH), false nếu lý thuyết (LT) */
     @Column(name = "is_lab")
     private Boolean isLab = false;
+
+    /** Soft delete */
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

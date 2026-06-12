@@ -57,6 +57,14 @@ public class JwtUtil {
         }
     }
 
+    public Date extractIssuedAt(String token) {
+        try {
+            return parseClaims(token).getIssuedAt();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getKey())

@@ -1,7 +1,5 @@
 ﻿// admin_section_screen.dart
-import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../data/admin_repository.dart';
@@ -42,10 +40,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
 
   String? _filterSemester;
   String? _filterAcademicYear;
-
-  // Import Excel học phần
-  String? _importPath;
-  String? _importFileName;
 
   @override
   void initState() {
@@ -167,79 +161,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
 
   // ── Import Excel học phần ─────────────────────────────────────────────────
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
-    );
-    if (result != null) {
-      setState(() {
-        _importPath = result.files.single.path;
-        _importFileName = result.files.single.name;
-      });
-    }
-  }
-
-  Future<void> _previewAndImport() async {
-    if (_importPath == null) {
-      _showSnack('Hãy chọn file Excel danh sách học phần', isError: true);
-      return;
-    }
-    try {
-      final preview = await _repo.previewSectionsExcel(_importPath!);
-      if (!mounted) return;
-      final confirmed = await _showSectionImportPreviewDialog(preview);
-      if (confirmed != true) return;
-      final result = await _repo.importSectionsExcel(_importPath!);
-      final data = result['data'] as Map? ?? result;
-      _showSnack('Import thành công ${data['successCount'] ?? 0} học phần');
-      setState(() {
-        _importPath = null;
-        _importFileName = null;
-      });
-      _loadData();
-    } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Import thất bại', isError: true);
-    }
-  }
-
-  Future<bool?> _showSectionImportPreviewDialog(Map<String, dynamic> preview) {
-    if (preview.containsKey('error')) {
-      _showSnack(preview['error'].toString(), isError: true);
-      return Future.value(false);
-    }
-    final rows = (preview['rows'] as List? ?? []).cast<Map>();
-    final validCount = preview['validCount'] as int? ?? 0;
-    final invalidCount = preview['invalidCount'] as int? ?? 0;
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: _ImportPreviewDialog(
-          title: 'Preview import học phần',
-          validCount: validCount,
-          invalidCount: invalidCount,
-          columns: const ['Dòng', 'Mã MH', 'Tên MH', 'TH?', 'HK', 'Năm học', 'Trạng thái'],
-          rows: rows.map((r) {
-            final valid = r['valid'] == true;
-            return _PreviewRow(
-              cells: [
-                r['row']?.toString() ?? '',
-                r['courseCode']?.toString() ?? '',
-                r['courseName']?.toString() ?? '',
-                r['isLab'] == true ? 'TH' : 'LT',
-                r['semester']?.toString() ?? '',
-                r['academicYear']?.toString() ?? '',
-                valid ? '✓ Hợp lệ' : '✗ ${r['error'] ?? ''}',
-              ],
-              isValid: valid,
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
   // ── Group by semester/year ────────────────────────────────────────────────
 
   Map<String, List<Map<String, dynamic>>> _groupedSections() {
@@ -269,7 +190,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
       body: Column(
         children: [
           _buildFilterBar(),
-          _buildImportBar(),
           _buildStatsBar(),
           Expanded(child: _buildList()),
         ],
@@ -361,57 +281,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
                 ),
               ],
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImportBar() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.insert_drive_file_outlined, size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _importFileName ?? 'Excel học phần: course_code, is_lab, semester, academic_year[, start_date, end_date]',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _importFileName != null ? AppColors.textPrimary : AppColors.textSecondary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            style: AdminTheme.outlinedButtonStyle(),
-            onPressed: _pickFile,
-            icon: const Icon(Icons.attach_file, size: 16),
-            label: const Text('Chọn'),
-          ),
-          const SizedBox(width: 6),
-          ElevatedButton.icon(
-            style: AdminTheme.primaryButtonStyle(),
-            onPressed: _previewAndImport,
-            icon: const Icon(Icons.upload_file, size: 16, color: Colors.white),
-            label: const Text('Import', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -763,6 +632,22 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
     }
   }
 
+  Future<void> _editSection() async {
+    if (_detail == null) return;
+    final updated = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SectionEditSheet(
+        repo: widget.repo,
+        sectionId: widget.sectionId,
+        detail: _detail!,
+      ),
+    );
+    if (updated == true) _loadDetail();
+  }
+
   Future<void> _deleteSection() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -864,19 +749,6 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
     if (updated == true) _loadDetail();
   }
 
-  Future<void> _importStudents() async {
-    final updated = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _SectionStudentImportScreen(
-          repo: widget.repo,
-          sectionId: widget.sectionId,
-        ),
-      ),
-    );
-    if (updated == true) _loadDetail();
-  }
-
   @override
   Widget build(BuildContext context) {
     final d = _detail;
@@ -912,12 +784,18 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
           ),
         ),
         actions: [
-          if (d != null)
+          if (d != null) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              tooltip: 'Chỉnh sửa học phần',
+              onPressed: _editSection,
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               tooltip: 'Xóa học phần',
               onPressed: _deleteSection,
             ),
+          ],
         ],
       ),
       body: _loading
@@ -1090,37 +968,10 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
                 children: [
                   Expanded(
                       child: AdminTheme.sectionTitle('Danh sách sinh viên (${students.length})')),
-                  PopupMenuButton<String>(
-                    onSelected: (val) {
-                      if (val == 'manual') _manageStudents();
-                      if (val == 'import') _importStudents();
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                          value: 'manual',
-                          child: Row(children: [
-                            Icon(Icons.manage_accounts_outlined, size: 18),
-                            SizedBox(width: 8),
-                            Text('Quản lý thủ công')
-                          ])),
-                      const PopupMenuItem(
-                          value: 'import',
-                          child: Row(children: [
-                            Icon(Icons.upload_file_outlined, size: 18),
-                            SizedBox(width: 8),
-                            Text('Import Excel')
-                          ])),
-                    ],
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Thêm SV', style: TextStyle(color: AppColors.primary, fontSize: 14)),
-                          Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                        ],
-                      ),
-                    ),
+                  TextButton.icon(
+                    onPressed: _manageStudents,
+                    icon: const Icon(Icons.manage_accounts_outlined, size: 18, color: AppColors.primary),
+                    label: const Text('Quản lý SV', style: TextStyle(color: AppColors.primary)),
                   ),
                 ],
               ),
@@ -1241,6 +1092,44 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
     } catch (_) {}
   }
 
+  String? _validateDates() {
+    final ay = _academicYearCtrl.text.trim();
+    final start = _startDateCtrl.text.trim();
+    final end = _endDateCtrl.text.trim();
+
+    final ayRegex = RegExp(r'^\d{4}-\d{4}$');
+    if (!ayRegex.hasMatch(ay)) {
+      return 'Năm học phải theo định dạng yyyy-yyyy (ví dụ: 2025-2026)';
+    }
+    final yearStart = int.parse(ay.substring(0, 4));
+    final yearEnd = int.parse(ay.substring(5));
+    if (yearEnd != yearStart + 1) {
+      return 'Năm học không hợp lệ: năm sau phải bằng năm trước + 1';
+    }
+    if (start.isEmpty) return 'Ngày bắt đầu không được để trống';
+    if (end.isEmpty) return 'Ngày kết thúc không được để trống';
+
+    DateTime? startDate, endDate;
+    try {
+      startDate = DateTime.parse(start);
+      endDate = DateTime.parse(end);
+    } catch (_) {
+      return 'Định dạng ngày không hợp lệ (yyyy-MM-dd)';
+    }
+    if (!endDate.isAfter(startDate)) {
+      return 'Ngày kết thúc phải sau ngày bắt đầu';
+    }
+    final rangeStart = DateTime(yearStart, 1, 1);
+    final rangeEnd = DateTime(yearEnd, 12, 31);
+    if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd)) {
+      return 'Ngày bắt đầu phải nằm trong năm học $ay';
+    }
+    if (endDate.isBefore(rangeStart) || endDate.isAfter(rangeEnd)) {
+      return 'Ngày kết thúc phải nằm trong năm học $ay';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (_selectedCourse == null) {
       _showSnack('Vui lòng chọn môn học', isError: true);
@@ -1252,6 +1141,11 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
     }
     if (_academicYearCtrl.text.trim().isEmpty) {
       _showSnack('Vui lòng nhập năm học', isError: true);
+      return;
+    }
+    final error = _validateDates();
+    if (error != null) {
+      _showSnack(error, isError: true);
       return;
     }
     setState(() => _saving = true);
@@ -1452,6 +1346,291 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Form chỉnh sửa thông tin học phần
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionEditSheet extends StatefulWidget {
+  final AdminRepository repo;
+  final int sectionId;
+  final Map<String, dynamic> detail;
+
+  const _SectionEditSheet({
+    required this.repo,
+    required this.sectionId,
+    required this.detail,
+  });
+
+  @override
+  State<_SectionEditSheet> createState() => _SectionEditSheetState();
+}
+
+class _SectionEditSheetState extends State<_SectionEditSheet> {
+  final _semesterCtrl = TextEditingController();
+  final _academicYearCtrl = TextEditingController();
+  final _startDateCtrl = TextEditingController();
+  final _endDateCtrl = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.detail;
+    _semesterCtrl.text = d['semester']?.toString() ?? '';
+    _academicYearCtrl.text = d['academicYear']?.toString() ?? '';
+    _startDateCtrl.text = d['startDate']?.toString() ?? '';
+    _endDateCtrl.text = d['endDate']?.toString() ?? '';
+  }
+
+  @override
+  void dispose() {
+    _semesterCtrl.dispose();
+    _academicYearCtrl.dispose();
+    _startDateCtrl.dispose();
+    _endDateCtrl.dispose();
+    super.dispose();
+  }
+
+  String? _validateAndGetError() {
+    final ay = _academicYearCtrl.text.trim();
+    final start = _startDateCtrl.text.trim();
+    final end = _endDateCtrl.text.trim();
+
+    // Validate format năm học yyyy-yyyy
+    final ayRegex = RegExp(r'^\d{4}-\d{4}$');
+    if (!ayRegex.hasMatch(ay)) {
+      return 'Năm học phải theo định dạng yyyy-yyyy (ví dụ: 2025-2026)';
+    }
+    final yearStart = int.parse(ay.substring(0, 4));
+    final yearEnd = int.parse(ay.substring(5));
+    if (yearEnd != yearStart + 1) {
+      return 'Năm học không hợp lệ: năm sau phải bằng năm trước + 1';
+    }
+
+    // Validate ngày không trống
+    if (start.isEmpty) return 'Ngày bắt đầu không được để trống';
+    if (end.isEmpty) return 'Ngày kết thúc không được để trống';
+
+    // Parse ngày (định dạng yyyy-MM-dd từ backend)
+    DateTime? startDate, endDate;
+    try {
+      startDate = DateTime.parse(start);
+      endDate = DateTime.parse(end);
+    } catch (_) {
+      return 'Định dạng ngày không hợp lệ (yyyy-MM-dd)';
+    }
+
+    // Validate endDate > startDate
+    if (!endDate.isAfter(startDate)) {
+      return 'Ngày kết thúc phải sau ngày bắt đầu';
+    }
+
+    // Validate nằm trong phạm vi năm học
+    final rangeStart = DateTime(yearStart, 1, 1);
+    final rangeEnd = DateTime(yearEnd, 12, 31);
+    if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd)) {
+      return 'Ngày bắt đầu phải nằm trong năm học $ay ($yearStart-01-01 đến $yearEnd-12-31)';
+    }
+    if (endDate.isBefore(rangeStart) || endDate.isAfter(rangeEnd)) {
+      return 'Ngày kết thúc phải nằm trong năm học $ay ($yearStart-01-01 đến $yearEnd-12-31)';
+    }
+
+    return null;
+  }
+
+  Future<void> _submit() async {
+    if (_semesterCtrl.text.trim().isEmpty) {
+      _showSnack('Vui lòng chọn học kỳ', isError: true);
+      return;
+    }
+    if (_academicYearCtrl.text.trim().isEmpty) {
+      _showSnack('Vui lòng nhập năm học', isError: true);
+      return;
+    }
+    final error = _validateAndGetError();
+    if (error != null) {
+      _showSnack(error, isError: true);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await widget.repo.updateAdminSection(widget.sectionId, {
+        'semester': _semesterCtrl.text.trim(),
+        'academicYear': _academicYearCtrl.text.trim(),
+        'startDate': _startDateCtrl.text.trim().isEmpty ? null : _startDateCtrl.text.trim(),
+        'endDate': _endDateCtrl.text.trim().isEmpty ? null : _endDateCtrl.text.trim(),
+      });
+      if (!mounted) return;
+      await AdminNotification.show(context, 'Cập nhật học phần thành công');
+      if (mounted) Navigator.pop(context, true);
+    } on DioException catch (e) {
+      _showSnack(e.response?.data?['message'] ?? 'Lưu thất bại', isError: true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.detail;
+    final isLab = d['isLab'] == true;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 1.0,
+      builder: (_, scrollCtrl) => Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Text('Chỉnh sửa học phần',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Hiển thị thông tin môn học (readonly)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isLab ? Colors.orange.shade50 : AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isLab ? Colors.orange.shade200 : AppColors.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Text(
+                              isLab ? 'TH' : 'LT',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isLab ? Colors.orange.shade700 : AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  d['courseName']?.toString() ?? '',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  d['courseCode']?.toString() ?? '',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.lock_outline, size: 16, color: AppColors.textSecondary),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AdminTheme.sectionTitle('Thông tin học kỳ'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _semesterCtrl.text.isEmpty ? null : _semesterCtrl.text,
+                            decoration: AdminTheme.inputDecoration('Học kỳ'),
+                            items: ['1', '2', '3']
+                                .map((s) => DropdownMenuItem(value: s, child: Text('HK $s')))
+                                .toList(),
+                            onChanged: (v) => setState(() => _semesterCtrl.text = v ?? ''),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _academicYearCtrl,
+                            decoration: AdminTheme.inputDecoration('Năm học', hint: '2024-2025'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: _DateField(label: 'Ngày bắt đầu', controller: _startDateCtrl)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _DateField(label: 'Ngày kết thúc', controller: _endDateCtrl)),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: AdminTheme.primaryButtonStyle(),
+                        onPressed: _saving ? null : _submit,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Lưu thay đổi',
+                                style: TextStyle(fontSize: 15, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    if (isError) {
+      AdminNotification.showError(context, msg);
+    } else {
+      AdminNotification.show(context, msg);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Form thêm/sửa ca học trong học phần
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1505,12 +1684,30 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
       _showSnack('Vui lòng chọn ca học', isError: true);
       return;
     }
+    final room = _roomCtrl.text.trim();
+    final lecturer = _lecturerCtrl.text.trim();
+    if (room.isEmpty) {
+      _showSnack('Phòng học không được để trống', isError: true);
+      return;
+    }
+    if (!RegExp(r'^[\p{L}\d\s.\-]+$', unicode: true).hasMatch(room)) {
+      _showSnack('Tên phòng không được chứa ký tự đặc biệt', isError: true);
+      return;
+    }
+    if (lecturer.isEmpty) {
+      _showSnack('Giảng viên không được để trống', isError: true);
+      return;
+    }
+    if (!RegExp(r'^[\p{L}\s]+$', unicode: true).hasMatch(lecturer)) {
+      _showSnack('Tên giảng viên không được chứa số hoặc ký tự đặc biệt', isError: true);
+      return;
+    }
     setState(() => _saving = true);
     final payload = {
       'dayOfWeek': _dayOfWeek,
       'period': _period,
-      'room': _roomCtrl.text.trim().isEmpty ? null : _roomCtrl.text.trim(),
-      'lecturer': _lecturerCtrl.text.trim().isEmpty ? null : _lecturerCtrl.text.trim(),
+      'room': room,
+      'lecturer': lecturer,
     };
     try {
       if (widget.existing != null) {
@@ -1868,283 +2065,7 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Student Import từ Excel với Preview
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _SectionStudentImportScreen extends StatefulWidget {
-  final AdminRepository repo;
-  final int sectionId;
-
-  const _SectionStudentImportScreen({required this.repo, required this.sectionId});
-
-  @override
-  State<_SectionStudentImportScreen> createState() => _SectionStudentImportScreenState();
-}
-
-class _SectionStudentImportScreenState extends State<_SectionStudentImportScreen> {
-  String? _importPath;
-  String? _importFileName;
-  Map<String, dynamic>? _previewData;
-  bool _previewing = false;
-  bool _importing = false;
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
-    );
-    if (result != null) {
-      setState(() {
-        _importPath = result.files.single.path;
-        _importFileName = result.files.single.name;
-        _previewData = null;
-      });
-    }
-  }
-
-  Future<void> _doPreview() async {
-    if (_importPath == null) {
-      _showSnack('Hãy chọn file Excel trước', isError: true);
-      return;
-    }
-    setState(() => _previewing = true);
-    try {
-      final data = await widget.repo.previewSectionStudentsExcel(widget.sectionId, _importPath!);
-      if (!mounted) return;
-      if (data.containsKey('error')) {
-        _showSnack(data['error'].toString(), isError: true);
-        return;
-      }
-      setState(() => _previewData = data);
-    } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Preview thất bại', isError: true);
-    } finally {
-      if (mounted) setState(() => _previewing = false);
-    }
-  }
-
-  Future<void> _doImport() async {
-    if (_importPath == null) return;
-    setState(() => _importing = true);
-    try {
-      final result = await widget.repo.importSectionStudentsExcel(widget.sectionId, _importPath!);
-      final data = result['data'] as Map? ?? result;
-      final success = data['successCount'] ?? 0;
-      if (!mounted) return;
-      await AdminNotification.show(context, 'Import thành công $success sinh viên');
-      if (mounted) Navigator.pop(context, true);
-    } on DioException catch (e) {
-      _showSnack(e.response?.data?['message'] ?? 'Import thất bại', isError: true);
-    } finally {
-      if (mounted) setState(() => _importing = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = _previewData;
-    final rows = preview != null ? (preview['rows'] as List? ?? []).cast<Map>() : <Map>[];
-    final validCount = preview?['validCount'] as int? ?? 0;
-    final invalidCount = preview?['invalidCount'] as int? ?? 0;
-
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AdminTheme.appBar(context, 'Import sinh viên từ Excel'),
-      body: Column(
-        children: [
-          // File picker bar
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Cột bắt buộc: mssv — Cột tùy chọn: full_name',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.insert_drive_file_outlined,
-                                size: 16, color: AppColors.textSecondary),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                _importFileName ?? 'Chưa chọn file',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: _importFileName != null
-                                      ? AppColors.textPrimary
-                                      : AppColors.textSecondary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      style: AdminTheme.outlinedButtonStyle(),
-                      onPressed: _pickFile,
-                      child: const Text('Chọn'),
-                    ),
-                    const SizedBox(width: 6),
-                    ElevatedButton(
-                      style: AdminTheme.primaryButtonStyle(),
-                      onPressed: _previewing ? null : _doPreview,
-                      child: _previewing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Preview', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // Preview result
-          if (preview != null) ...[
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  _StatBadge(label: 'Hợp lệ', count: validCount, color: Colors.green.shade600),
-                  const SizedBox(width: 12),
-                  _StatBadge(label: 'Lỗi', count: invalidCount, color: Colors.red.shade600),
-                  const Spacer(),
-                  if (validCount > 0)
-                    ElevatedButton.icon(
-                      style: AdminTheme.primaryButtonStyle(),
-                      onPressed: _importing ? null : _doImport,
-                      icon: _importing
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.file_upload_outlined, size: 16, color: Colors.white),
-                      label: Text('Import $validCount SV', style: const TextStyle(color: Colors.white)),
-                    ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                itemCount: rows.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
-                itemBuilder: (_, i) {
-                  final r = rows[i];
-                  final valid = r['valid'] == true;
-                  final nameMatch = r['nameMatch'] == true;
-                  final mssv = r['mssv']?.toString() ?? '';
-                  final fullName = r['fullName']?.toString() ?? '';
-                  final systemName = r['systemName']?.toString() ?? '';
-                  final error = r['error']?.toString();
-
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: valid ? Colors.green.shade50 : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: valid ? Colors.green.shade300 : Colors.red.shade300,
-                        ),
-                      ),
-                      child: Icon(
-                        valid ? Icons.check : Icons.close,
-                        size: 16,
-                        color: valid ? Colors.green.shade700 : Colors.red.shade700,
-                      ),
-                    ),
-                    title: Row(
-                      children: [
-                        Text(mssv,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 14)),
-                        const SizedBox(width: 8),
-                        if (valid && fullName.isNotEmpty) ...[
-                          // tên khớp = tick xanh, không khớp = icon cảnh báo
-                          Icon(
-                            nameMatch ? Icons.verified : Icons.warning_amber_outlined,
-                            size: 14,
-                            color: nameMatch ? Colors.green.shade600 : Colors.orange.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                      ],
-                    ),
-                    subtitle: valid
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(systemName,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color: nameMatch ? AppColors.textPrimary : Colors.orange.shade700)),
-                              if (fullName.isNotEmpty && !nameMatch)
-                                Text('File: $fullName',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.orange.shade600,
-                                        fontStyle: FontStyle.italic)),
-                            ],
-                          )
-                        : Text(error ?? 'Lỗi không xác định',
-                            style: TextStyle(fontSize: 12, color: Colors.red.shade600)),
-                    trailing: Text('Dòng ${r['row'] ?? i + 2}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                  );
-                },
-              ),
-            ),
-          ] else
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.upload_file_outlined, size: 56, color: AppColors.border),
-                    const SizedBox(height: 12),
-                    const Text('Chọn file Excel và nhấn Preview\nđể kiểm tra trước khi import',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _showSnack(String msg, {bool isError = false}) {
-    if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Widgets
@@ -2329,140 +2250,4 @@ class _FilterDropdown extends StatelessWidget {
         ],
         onChanged: onChanged,
       );
-}
-
-class _StatBadge extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-
-  const _StatBadge({required this.label, required this.count, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Text(
-          '$label: $count',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
-        ),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Import Preview Dialog (dùng cho section excel)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ImportPreviewDialog extends StatelessWidget {
-  final String title;
-  final int validCount;
-  final int invalidCount;
-  final List<String> columns;
-  final List<_PreviewRow> rows;
-
-  const _ImportPreviewDialog({
-    required this.title,
-    required this.validCount,
-    required this.invalidCount,
-    required this.columns,
-    required this.rows,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-          child: Row(
-            children: [
-              Expanded(
-                  child: Text(title,
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
-              IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context, false)),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              _StatBadge(label: 'Hợp lệ', count: validCount, color: Colors.green.shade600),
-              const SizedBox(width: 10),
-              _StatBadge(label: 'Lỗi', count: invalidCount, color: Colors.red.shade600),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Divider(height: 1),
-        SizedBox(
-          height: 320,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              child: DataTable(
-                columnSpacing: 12,
-                headingRowHeight: 36,
-                dataRowMinHeight: 32,
-                dataRowMaxHeight: 48,
-                columns: columns
-                    .map((c) => DataColumn(
-                        label: Text(c,
-                            style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w700))))
-                    .toList(),
-                rows: rows.map((r) {
-                  return DataRow(
-                    color: WidgetStateProperty.all(
-                      r.isValid ? Colors.green.withValues(alpha: 0.04) : Colors.red.withValues(alpha: 0.04),
-                    ),
-                    cells: r.cells
-                        .map((c) => DataCell(Text(c,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: r.isValid ? AppColors.textPrimary : Colors.red.shade700,
-                            ))))
-                        .toList(),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ),
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              OutlinedButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Hủy')),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                style: AdminTheme.primaryButtonStyle(),
-                onPressed:
-                    validCount > 0 ? () => Navigator.pop(context, true) : null,
-                child: Text('Import $validCount mục',
-                    style: const TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewRow {
-  final List<String> cells;
-  final bool isValid;
-  const _PreviewRow({required this.cells, required this.isValid});
 }

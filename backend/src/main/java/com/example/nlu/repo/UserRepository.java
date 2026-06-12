@@ -17,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     @Query("SELECT u FROM User u WHERE u.role = :role " +
+           "AND (u.isDeleted = false OR u.isDeleted IS NULL) " +
            "AND (:keyword IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<User> findByRoleAndKeyword(@Param("role") Role role, @Param("keyword") String keyword);
 }

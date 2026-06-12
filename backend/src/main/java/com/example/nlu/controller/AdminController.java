@@ -465,61 +465,6 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/sections/{id}/students/preview")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> previewSectionStudentsExcel(@PathVariable Long id,
-                                                          @RequestParam("file") MultipartFile file) {
-        try {
-            var result = adminScheduleService.previewSectionStudentsExcel(id, file);
-            return ResponseEntity.ok(Map.of("data", result));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/sections/{id}/students/import")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> importSectionStudentsExcel(@PathVariable Long id,
-                                                         @RequestParam("file") MultipartFile file) {
-        try {
-            var result = adminScheduleService.importSectionStudentsExcel(id, file);
-            return ResponseEntity.ok(Map.of("message", "Import sinh viên hoàn tất", "data", result));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
-        }
-    }
-
-    // ── Section Excel Import ─────────────────────────────────────────────────
-
-    @PostMapping("/sections/preview")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> previewSectionsExcel(@RequestParam("file") MultipartFile file) {
-        try {
-            return ResponseEntity.ok(Map.of("data", adminScheduleService.previewSectionExcel(file)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/sections/import")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> importSectionsExcel(@RequestParam("file") MultipartFile file) {
-        try {
-            var result = adminScheduleService.importSectionExcel(file);
-            return ResponseEntity.ok(Map.of("message", "Import học phần hoàn tất", "data", result));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi server: " + e.getMessage()));
-        }
-    }
-
     private String studentRepository(Long id) {
         return adminStudentService.getStudentDetail(id).getStudentCode();
     }

@@ -204,13 +204,13 @@ public class ChatbotService {
 
         List<Grade> grades = gradeRepository.findByStudentAndSemester(studentCode, ay, sem);
         Map<Long, Grade> gradeMap = grades.stream()
-                .collect(Collectors.toMap(g -> g.getSection().getId(), g -> g, (a, b) -> a));
+                .collect(Collectors.toMap(g -> g.getEnrollment().getId(), g -> g, (a, b) -> a));
 
         StringBuilder sb = new StringBuilder();
         sb.append("Bảng điểm HK").append(sem).append(" năm học ").append(ay).append(":\n");
         for (Enrollment e : enrollments) {
             Course c = e.getSection().getCourse();
-            Grade g = gradeMap.get(e.getSection().getId());
+            Grade g = gradeMap.get(e.getId());
             sb.append("- ").append(c.getCourseName()).append(" (").append(c.getCourseCode()).append(") - ").append(c.getCredits()).append(" TC\n");
             if (g != null) {
                 sb.append("  ĐQT: ").append(g.getProcessScore() != null ? g.getProcessScore() : "Chưa có");
@@ -352,8 +352,8 @@ public class ChatbotService {
         List<Enrollment> allEnrollments = enrollmentRepository.findAllByStudentCode(studentCode);
         if (allEnrollments.isEmpty()) return "Không có dữ liệu môn học.";
 
-        List<Long> sectionIds = allEnrollments.stream().map(e -> e.getSection().getId()).collect(Collectors.toList());
-        List<Grade> allGrades = gradeRepository.findAllBySectionIds(sectionIds);
+        List<Long> enrollmentIds = allEnrollments.stream().map(Enrollment::getId).collect(Collectors.toList());
+        List<Grade> allGrades = gradeRepository.findAllByEnrollmentIds(enrollmentIds);
 
         List<Grade> failed = allGrades.stream()
                 .filter(g -> g.getFinalScore10() != null && g.getFinalScore10() < 4.0f
@@ -364,7 +364,7 @@ public class ChatbotService {
 
         StringBuilder sb = new StringBuilder("Các môn không đạt:\n");
         for (Grade g : failed) {
-            Section sec = g.getSection();
+            Section sec = g.getEnrollment().getSection();
             sb.append("- ").append(sec.getCourse().getCourseName())
               .append(" (").append(sec.getCourse().getCourseCode()).append(")")
               .append(" HK").append(sec.getSemester()).append(" ").append(sec.getAcademicYear()).append("\n");

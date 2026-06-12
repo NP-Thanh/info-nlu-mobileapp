@@ -2,9 +2,11 @@ package com.example.nlu.service;
 
 import com.example.nlu.entity.Role;
 import com.example.nlu.entity.User;
+import com.example.nlu.repo.UserDeviceRepository;
 import com.example.nlu.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +28,11 @@ public class AdminUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
+    private final TokenBlacklistService tokenBlacklistService;
+    private final UserDeviceRepository userDeviceRepository;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
 
     private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -83,8 +91,20 @@ public class AdminUserService {
         for (User u : users) {
             if (u.getRole() != Role.ADMIN)
                 throw new IllegalArgumentException("Chỉ được xóa tài khoản admin");
+            if ("admin".equalsIgnoreCase(u.getUsername()))
+                throw new IllegalArgumentException("Không thể xóa tài khoản super admin (admin)");
         }
-        userRepository.deleteAllById(ids);
+        for (User u : users) {
+            // Revoke tất cả JWT token đang active
+            tokenBlacklistService.revokeAllTokensForUser(
+                    u.getUsername(), Duration.ofMillis(jwtExpiration));
+            // Xóa device tokens (FCM) để không nhận push notification nữa
+            userDeviceRepository.deleteByUser_Id(u.getId());
+            // Soft delete user
+            u.setIsDeleted(true);
+            u.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(u);
+        }
     }
 
     private String generatePassword() {
