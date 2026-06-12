@@ -12,6 +12,7 @@ public class AdminScheduleListResponse {
     private String courseCode;
     private String courseName;
     private Integer credits;
+    /** true nếu là ca thực hành (TH) */
     private Boolean isLab;
     private String semester;
     private String academicYear;

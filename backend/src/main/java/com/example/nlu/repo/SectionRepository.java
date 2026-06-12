@@ -14,32 +14,27 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     @Query("SELECT s FROM Section s WHERE s.id = :id AND s.isDeleted = false")
     Optional<Section> findActiveById(@Param("id") Long id);
 
-    /** Tìm section theo course + semester + year + isLab (chỉ active) */
+    /** Tìm section theo course + semester + year + groupNumber + teamNumber (chỉ active) */
     @Query("""
            SELECT s FROM Section s
            JOIN FETCH s.course c
            WHERE s.course.id = :courseId
              AND s.semester = :semester
              AND s.academicYear = :academicYear
-             AND s.isLab = :isLab
+             AND s.groupNumber = :groupNumber
+             AND s.teamNumber = :teamNumber
              AND s.isDeleted = false
            """)
-    List<Section> findByCourseAndSemesterAndYear(
+    List<Section> findByCourseAndSemesterAndYearAndGroup(
             @Param("courseId") Long courseId,
             @Param("semester") String semester,
             @Param("academicYear") String academicYear,
-            @Param("isLab") Boolean isLab);
+            @Param("groupNumber") Integer groupNumber,
+            @Param("teamNumber") Integer teamNumber);
 
     /** Kiểm tra đã tồn tại section active chưa */
-    boolean existsByCourse_IdAndSemesterAndAcademicYearAndIsLabAndIsDeletedFalse(
-            Long courseId, String semester, String academicYear, Boolean isLab);
-
-    /** Tìm section LT (isLab=false) active theo course + semester + year */
-    Optional<Section> findTopByCourse_IdAndSemesterAndAcademicYearAndIsLabFalseAndIsDeletedFalseOrderByIdDesc(
-            Long courseId, String semester, String academicYear);
-
-    /** Tìm section LT (isLab=false) active mới nhất theo course (không cần term) */
-    Optional<Section> findTopByCourse_IdAndIsLabFalseAndIsDeletedFalseOrderByIdDesc(Long courseId);
+    boolean existsByCourse_IdAndSemesterAndAcademicYearAndGroupNumberAndTeamNumberAndIsDeletedFalse(
+            Long courseId, String semester, String academicYear, Integer groupNumber, Integer teamNumber);
 
     /** Lấy tất cả sections active với course, lọc keyword/semester/academicYear */
     @Query("""

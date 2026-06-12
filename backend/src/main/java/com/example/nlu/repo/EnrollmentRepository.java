@@ -80,7 +80,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
            """)
     List<Object[]> findTermsByStudentCode(@Param("studentCode") String studentCode);
 
-    /** Tìm enrollment LT (isLab=false) mới nhất theo student + course + semester + year */
+    /** Tìm enrollment mới nhất theo student + course + semester + year */
     @Query("""
            SELECT e FROM Enrollment e
            JOIN e.section s
@@ -88,55 +88,23 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
              AND s.course.id = :courseId
              AND s.academicYear = :academicYear
              AND s.semester = :semester
-             AND s.isLab = false
            ORDER BY e.id DESC
            """)
-    List<Enrollment> findByStudentCourseTermNotLab(
+    Optional<Enrollment> findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterOrderByIdDesc(
             @Param("studentId") Long studentId,
             @Param("courseId") Long courseId,
             @Param("academicYear") String academicYear,
             @Param("semester") String semester);
 
-    /** Tìm enrollment LT mới nhất theo student + course */
+    /** Tìm enrollment mới nhất theo student + course (không cần term) */
     @Query("""
            SELECT e FROM Enrollment e
            JOIN e.section s
            WHERE e.student.id = :studentId
              AND s.course.id = :courseId
-             AND s.isLab = false
            ORDER BY e.id DESC
            """)
-    List<Enrollment> findByStudentCourseNotLab(
-            @Param("studentId") Long studentId,
-            @Param("courseId") Long courseId);
-
-    /** Tìm enrollment LT theo student + course + year + semester (dùng trong upsertGrade) */
-    @Query("""
-           SELECT e FROM Enrollment e
-           JOIN e.section s
-           WHERE e.student.id = :studentId
-             AND s.course.id = :courseId
-             AND s.academicYear = :academicYear
-             AND s.semester = :semester
-             AND s.isLab = false
-           ORDER BY e.id DESC
-           """)
-    Optional<Enrollment> findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
-            @Param("studentId") Long studentId,
-            @Param("courseId") Long courseId,
-            @Param("academicYear") String academicYear,
-            @Param("semester") String semester);
-
-    /** Tìm enrollment LT mới nhất theo student + course (không cần term) */
-    @Query("""
-           SELECT e FROM Enrollment e
-           JOIN e.section s
-           WHERE e.student.id = :studentId
-             AND s.course.id = :courseId
-             AND s.isLab = false
-           ORDER BY e.id DESC
-           """)
-    Optional<Enrollment> findTopByStudent_IdAndCourse_IdAndIsLabFalseOrderByIdDesc(
+    Optional<Enrollment> findTopByStudent_IdAndCourse_IdOrderByIdDesc(
             @Param("studentId") Long studentId,
             @Param("courseId") Long courseId);
 

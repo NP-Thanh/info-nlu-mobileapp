@@ -13,7 +13,8 @@ public class AdminSectionDetailResponse {
     private String courseCode;
     private String courseName;
     private Integer credits;
-    private Boolean isLab;
+    private Integer groupNumber;
+    private Integer teamNumber;
     private String semester;
     private String academicYear;
     private String startDate;

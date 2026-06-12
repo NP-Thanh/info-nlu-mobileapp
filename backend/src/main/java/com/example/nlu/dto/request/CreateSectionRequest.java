@@ -9,7 +9,10 @@ import java.time.LocalDate;
 @Setter
 public class CreateSectionRequest {
     private Long courseId;
-    private Boolean isLab;
+    /** Số nhóm: chỉ chứa chữ số, không được để trống */
+    private String groupNumber;
+    /** Số tổ: chỉ chứa chữ số, không được để trống */
+    private String teamNumber;
     private String semester;
     private String academicYear;
     private LocalDate startDate;

@@ -172,12 +172,12 @@ public class AdminAcademicService {
 
                     Student student = getStudentByCode(studentCode);
 
-                    // Kiểm tra sinh viên có enrollment LT cho môn này trong học kỳ không
+                    // Kiểm tra sinh viên có enrollment cho môn này trong học kỳ không
                     enrollmentRepository
-                            .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
+                            .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterOrderByIdDesc(
                                     student.getId(), course.getId(), academicYear.trim(), semester.trim())
                             .orElseThrow(() -> new IllegalArgumentException(
-                                    "Sinh viên " + studentCode + " không có đăng ký lý thuyết môn " + courseCode
+                                    "Sinh viên " + studentCode + " không có đăng ký môn " + courseCode
                                     + " trong HK " + semester + " - " + academicYear));
 
                     rowData.put("valid", true); rowData.put("error", null);
@@ -353,19 +353,19 @@ public class AdminAcademicService {
         validateScore(processScore, "Điểm quá trình");
         validateScore(examScore, "Điểm thi");
 
-        // Tìm enrollment LT (is_lab=false) của sinh viên trong môn + học kỳ
+        // Tìm enrollment mới nhất của sinh viên trong môn + học kỳ
         Enrollment enrollment;
         if (!isBlank(academicYear) && !isBlank(semester)) {
             enrollment = enrollmentRepository
-                    .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterAndIsLabFalseOrderByIdDesc(
+                    .findTopByStudent_IdAndCourse_IdAndAcademicYearAndSemesterOrderByIdDesc(
                             student.getId(), course.getId(), academicYear.trim(), semester.trim())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Sinh viên " + student.getStudentCode()
-                            + " không có đăng ký lý thuyết môn " + course.getCourseCode()
+                            + " không có đăng ký môn " + course.getCourseCode()
                             + " trong HK " + semester + " - " + academicYear));
         } else {
             enrollment = enrollmentRepository
-                    .findTopByStudent_IdAndCourse_IdAndIsLabFalseOrderByIdDesc(
+                    .findTopByStudent_IdAndCourse_IdOrderByIdDesc(
                             student.getId(), course.getId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Sinh viên " + student.getStudentCode()
@@ -389,6 +389,7 @@ public class AdminAcademicService {
         List<Grade> grades = gradeRepository.findByStudentAndSemester(
                 student.getStudentCode(), academicYear, semester);
 
+        // Gộp điểm theo mã môn, ưu tiên điểm cao hơn nếu có nhiều bản ghi
         Map<String, Grade> gradeByCourseCode = new LinkedHashMap<>();
         for (Grade grade : grades) {
             Section sec = grade.getEnrollment() != null ? grade.getEnrollment().getSection() : null;
@@ -396,15 +397,8 @@ public class AdminAcademicService {
             String courseCode = sec.getCourse().getCourseCode();
             if (isBlank(courseCode) || grade.getFinalScore10() == null || grade.getFinalScore4() == null) continue;
             Grade existing = gradeByCourseCode.get(courseCode);
-            boolean isCurrentTheory = sec.getIsLab() == null || !sec.getIsLab();
-            if (existing == null) {
+            if (existing == null || grade.getFinalScore10() > existing.getFinalScore10()) {
                 gradeByCourseCode.put(courseCode, grade);
-            } else {
-                Section existingSec = existing.getEnrollment().getSection();
-                boolean existingTheory = existingSec.getIsLab() == null || !existingSec.getIsLab();
-                if (!existingTheory && isCurrentTheory) {
-                    gradeByCourseCode.put(courseCode, grade);
-                }
             }
         }
 

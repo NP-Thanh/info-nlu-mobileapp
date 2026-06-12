@@ -22,7 +22,6 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
         WHERE e.student.studentCode = :studentCode
           AND s.academicYear = :academicYear
           AND s.semester = :semester
-          AND s.isLab = false
     """)
     List<Grade> findByStudentAndSemester(
             @Param("studentCode") String studentCode,

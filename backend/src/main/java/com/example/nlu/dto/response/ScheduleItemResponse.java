@@ -19,6 +19,6 @@ public class ScheduleItemResponse {
     private String periodEnd;
     private String enrollmentStartDate;
     private String enrollmentEndDate;
-    /** true nếu enrollment.is_lab = 1 */
+    /** true nếu là ca thực hành (TH) */
     private Boolean isLab;
 }

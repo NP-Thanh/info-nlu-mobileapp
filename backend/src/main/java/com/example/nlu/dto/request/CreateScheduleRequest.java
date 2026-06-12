@@ -28,4 +28,8 @@ public class CreateScheduleRequest {
     private Integer dayOfWeek;
     /** Ca học: 1-4 */
     private Integer period;
+    /** Số nhóm */
+    private Integer groupNumber;
+    /** Số tổ */
+    private Integer teamNumber;
 }

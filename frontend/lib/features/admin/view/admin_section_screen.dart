@@ -5,10 +5,6 @@ import '../../../core/constants/app_colors.dart';
 import '../data/admin_repository.dart';
 import '../widgets/admin_widgets.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
 const _dayLabels = {2: 'Thứ 2', 3: 'Thứ 3', 4: 'Thứ 4', 5: 'Thứ 5', 6: 'Thứ 6', 7: 'Thứ 7', 8: 'CN'};
 const _periodLabels = {
   1: 'Ca 1 (07:00–09:15)',
@@ -18,12 +14,11 @@ const _periodLabels = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Screen – danh sách học phần
+// Main Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AdminSectionScreen extends StatefulWidget {
   const AdminSectionScreen({super.key});
-
   @override
   State<AdminSectionScreen> createState() => _AdminSectionScreenState();
 }
@@ -91,14 +86,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     _fetchSections();
   }
 
-  // ── Selection mode ────────────────────────────────────────────────────────
-
-  void _enterSelectionMode(int id) {
-    setState(() {
-      _selectionMode = true;
-      _selectedIds.add(id);
-    });
-  }
+  void _enterSelectionMode(int id) => setState(() { _selectionMode = true; _selectedIds.add(id); });
 
   void _toggleSelect(int id) {
     setState(() {
@@ -114,8 +102,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
   void _toggleSelectAll() {
     setState(() {
       if (_selectedIds.length == _sections.length) {
-        _selectedIds.clear();
-        _selectionMode = false;
+        _selectedIds.clear(); _selectionMode = false;
       } else {
         _selectedIds.addAll(_sections.map((s) => (s['sectionId'] as num).toInt()));
         _selectionMode = true;
@@ -123,12 +110,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     });
   }
 
-  void _cancelSelection() {
-    setState(() {
-      _selectionMode = false;
-      _selectedIds.clear();
-    });
-  }
+  void _cancelSelection() => setState(() { _selectionMode = false; _selectedIds.clear(); });
 
   Future<void> _deleteSelected() async {
     if (_selectedIds.isEmpty) return;
@@ -159,10 +141,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     }
   }
 
-  // ── Import Excel học phần ─────────────────────────────────────────────────
-
-  // ── Group by semester/year ────────────────────────────────────────────────
-
   Map<String, List<Map<String, dynamic>>> _groupedSections() {
     final Map<String, List<Map<String, dynamic>>> groups = {};
     for (final s in _sections) {
@@ -171,8 +149,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     }
     return groups;
   }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -188,11 +164,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
               label: const Text('Thêm học phần', style: TextStyle(color: Colors.white)),
             ),
       body: Column(
-        children: [
-          _buildFilterBar(),
-          _buildStatsBar(),
-          Expanded(child: _buildList()),
-        ],
+        children: [_buildFilterBar(), _buildStatsBar(), Expanded(child: _buildList())],
       ),
     );
   }
@@ -213,11 +185,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
               style: const TextStyle(color: Colors.white),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Xóa đã chọn',
-            onPressed: _deleteSelected,
-          ),
+          IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Xóa đã chọn', onPressed: _deleteSelected),
         ],
       );
 
@@ -230,43 +198,30 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
         children: [
           TextField(
             controller: _searchCtrl,
-            decoration: AdminTheme.inputDecoration(
-              'Tìm môn học theo mã hoặc tên...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-            ),
+            decoration: AdminTheme.inputDecoration('Tìm môn học theo mã hoặc tên...',
+                prefixIcon: const Icon(Icons.search, size: 20)),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _FilterDropdown(
-                  label: 'Học kỳ',
-                  value: _filterSemester,
-                  items: const ['1', '2', '3'],
+                  label: 'Học kỳ', value: _filterSemester, items: const ['1', '2', '3'],
                   itemLabel: (v) => 'HK $v',
-                  onChanged: (v) {
-                    setState(() => _filterSemester = v);
-                    _fetchSections();
-                  },
+                  onChanged: (v) { setState(() => _filterSemester = v); _fetchSections(); },
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _FilterDropdown(
-                  label: 'Năm học',
-                  value: _filterAcademicYear,
-                  items: _academicYears,
-                  onChanged: (v) {
-                    setState(() => _filterAcademicYear = v);
-                    _fetchSections();
-                  },
+                  label: 'Năm học', value: _filterAcademicYear, items: _academicYears,
+                  onChanged: (v) { setState(() => _filterAcademicYear = v); _fetchSections(); },
                 ),
               ),
               if (hasFilter) ...[
                 const SizedBox(width: 6),
                 SizedBox(
-                  width: 36,
-                  height: 36,
+                  width: 36, height: 36,
                   child: IconButton.outlined(
                     onPressed: _resetFilters,
                     icon: const Icon(Icons.refresh, size: 18),
@@ -298,14 +253,11 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  Text(
-                    '${_sections.length} học phần',
-                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                  ),
+                  Text('${_sections.length} học phần',
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                   if (_filterSemester != null || _filterAcademicYear != null || _searchCtrl.text.isNotEmpty) ...[
                     const Text(' · ', style: TextStyle(color: AppColors.textSecondary)),
-                    const Text('đang lọc',
-                        style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                    const Text('đang lọc', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500)),
                   ],
                 ],
               ),
@@ -319,8 +271,7 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     if (_sections.isEmpty) {
       return RefreshIndicator(
-        onRefresh: _loadData,
-        color: AppColors.primary,
+        onRefresh: _loadData, color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: SizedBox(
@@ -339,7 +290,6 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
         ),
       );
     }
-
     final groups = _groupedSections();
     final sortedKeys = groups.keys.toList()
       ..sort((a, b) {
@@ -349,44 +299,30 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
         if (cmp != 0) return cmp;
         return b.compareTo(a);
       });
-
     return RefreshIndicator(
-      onRefresh: _loadData,
-      color: AppColors.primary,
+      onRefresh: _loadData, color: AppColors.primary,
       child: ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: sortedKeys.length,
-      itemBuilder: (context, i) {
-        final key = sortedKeys[i];
-        final items = groups[key]!;
-        return _SectionGroup(
-          groupLabel: key,
-          items: items,
-          selectionMode: _selectionMode,
-          selectedIds: _selectedIds,
-          onLongPress: _enterSelectionMode,
-          onTap: (id) {
-            if (_selectionMode) {
-              _toggleSelect(id);
-            } else {
-              _openSectionDetail(id);
-            }
-          },
-          onToggleSelect: _toggleSelect,
-        );
-      },
-    ),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        itemCount: sortedKeys.length,
+        itemBuilder: (context, i) {
+          final key = sortedKeys[i];
+          final items = groups[key]!;
+          return _SectionGroup(
+            groupLabel: key, items: items,
+            selectionMode: _selectionMode, selectedIds: _selectedIds,
+            onLongPress: _enterSelectionMode,
+            onTap: (id) { if (_selectionMode) { _toggleSelect(id); } else { _openSectionDetail(id); } },
+            onToggleSelect: _toggleSelect,
+          );
+        },
+      ),
     );
   }
 
-  // ── Navigation ────────────────────────────────────────────────────────────
-
   Future<void> _openSectionForm() async {
     final created = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+      context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SectionFormSheet(repo: _repo),
     );
@@ -395,19 +331,15 @@ class _AdminSectionScreenState extends State<AdminSectionScreen> {
 
   Future<void> _openSectionDetail(int sectionId) async {
     final changed = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => AdminSectionDetailScreen(sectionId: sectionId, repo: _repo)),
+      context, MaterialPageRoute(builder: (_) => AdminSectionDetailScreen(sectionId: sectionId, repo: _repo)),
     );
     if (changed == true) _loadData();
   }
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
 
@@ -425,12 +357,8 @@ class _SectionGroup extends StatelessWidget {
   final void Function(int) onToggleSelect;
 
   const _SectionGroup({
-    required this.groupLabel,
-    required this.items,
-    required this.selectionMode,
-    required this.selectedIds,
-    required this.onLongPress,
-    required this.onTap,
+    required this.groupLabel, required this.items, required this.selectionMode,
+    required this.selectedIds, required this.onLongPress, required this.onTap,
     required this.onToggleSelect,
   });
 
@@ -448,10 +376,8 @@ class _SectionGroup extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
-            child: Text(
-              '$groupLabel  •  ${items.length} học phần',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
-            ),
+            child: Text('$groupLabel  •  ${items.length} học phần',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
           ),
         ),
         ...items.map((s) {
@@ -460,11 +386,8 @@ class _SectionGroup extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _SectionCard(
-              data: s,
-              selected: selected,
-              selectionMode: selectionMode,
-              onLongPress: () => onLongPress(id),
-              onTap: () => onTap(id),
+              data: s, selected: selected, selectionMode: selectionMode,
+              onLongPress: () => onLongPress(id), onTap: () => onTap(id),
             ),
           );
         }),
@@ -485,16 +408,14 @@ class _SectionCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _SectionCard({
-    required this.data,
-    required this.selected,
-    required this.selectionMode,
-    required this.onLongPress,
-    required this.onTap,
+    required this.data, required this.selected, required this.selectionMode,
+    required this.onLongPress, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isLab = data['isLab'] == true;
+    final groupNumber = data['groupNumber'] ?? 1;
+    final teamNumber = data['teamNumber'] ?? 1;
     final studentCount = (data['studentCount'] as num?)?.toInt() ?? 0;
     final scheduleCount = (data['scheduleCount'] as num?)?.toInt() ?? 0;
 
@@ -502,40 +423,29 @@ class _SectionCard extends StatelessWidget {
       color: selected ? AppColors.primary.withValues(alpha: 0.08) : Colors.white,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
+        onTap: onTap, onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Ink(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
-              width: selected ? 1.5 : 1,
-            ),
+            border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
           ),
           child: Row(
             children: [
-              // Left badge: LT/TH
               Container(
-                width: 48,
-                height: 48,
+                width: 48, height: 48,
                 decoration: BoxDecoration(
-                  color: isLab ? Colors.orange.shade50 : AppColors.primary.withValues(alpha: 0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isLab ? Colors.orange.shade200 : AppColors.primary.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
-                child: Center(
-                  child: Text(
-                    isLab ? 'TH' : 'LT',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: isLab ? Colors.orange.shade700 : AppColors.primary,
-                    ),
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('N$groupNumber', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                    Text('T$teamNumber', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -543,40 +453,29 @@ class _SectionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      data['courseName']?.toString() ?? '',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(data['courseName']?.toString() ?? '',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 3),
-                    Text(
-                      '${data['courseCode']} · HK${data['semester']} ${data['academicYear']}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
+                    Text('${data['courseCode']} · HK${data['semester']} ${data['academicYear']}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.schedule_outlined, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 3),
-                        Text('$scheduleCount ca học',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text('$scheduleCount ca học', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         const SizedBox(width: 10),
                         const Icon(Icons.people_outline, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 3),
-                        Text('$studentCount SV',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text('$studentCount SV', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                       ],
                     ),
                   ],
                 ),
               ),
               if (selectionMode)
-                Checkbox(
-                  value: selected,
-                  activeColor: AppColors.primary,
-                  onChanged: (_) => onTap(),
-                )
+                Checkbox(value: selected, activeColor: AppColors.primary, onChanged: (_) => onTap())
               else
                 const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
             ],
@@ -594,7 +493,6 @@ class _SectionCard extends StatelessWidget {
 class AdminSectionDetailScreen extends StatefulWidget {
   final int sectionId;
   final AdminRepository repo;
-
   const AdminSectionDetailScreen({super.key, required this.sectionId, required this.repo});
 
   @override
@@ -615,10 +513,7 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  void dispose() { _tabController.dispose(); super.dispose(); }
 
   Future<void> _loadDetail() async {
     setState(() => _loading = true);
@@ -635,15 +530,9 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
   Future<void> _editSection() async {
     if (_detail == null) return;
     final updated = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+      context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _SectionEditSheet(
-        repo: widget.repo,
-        sectionId: widget.sectionId,
-        detail: _detail!,
-      ),
+      builder: (_) => _SectionEditSheet(repo: widget.repo, sectionId: widget.sectionId, detail: _detail!),
     );
     if (updated == true) _loadDetail();
   }
@@ -676,29 +565,19 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
 
   Future<void> _addSchedule() async {
     final added = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+      context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _SectionScheduleFormSheet(
-        repo: widget.repo,
-        sectionId: widget.sectionId,
-      ),
+      builder: (_) => _SectionScheduleFormSheet(repo: widget.repo, sectionId: widget.sectionId),
     );
     if (added == true) _loadDetail();
   }
 
   Future<void> _editSchedule(Map<dynamic, dynamic> sch) async {
     final updated = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+      context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SectionScheduleFormSheet(
-        repo: widget.repo,
-        sectionId: widget.sectionId,
-        existing: Map<String, dynamic>.from(sch),
-      ),
+          repo: widget.repo, sectionId: widget.sectionId, existing: Map<String, dynamic>.from(sch)),
     );
     if (updated == true) _loadDetail();
   }
@@ -733,18 +612,11 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
   Future<void> _manageStudents() async {
     if (_detail == null) return;
     final currentIds = (_detail!['students'] as List? ?? [])
-        .cast<Map>()
-        .map((s) => (s['studentId'] as num).toInt())
-        .toList();
+        .cast<Map>().map((s) => (s['studentId'] as num).toInt()).toList();
     final updated = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => _SectionStudentPickerScreen(
-          repo: widget.repo,
-          sectionId: widget.sectionId,
-          currentStudentIds: currentIds,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => _SectionStudentPickerScreen(
+          repo: widget.repo, sectionId: widget.sectionId, currentStudentIds: currentIds)),
     );
     if (updated == true) _loadDetail();
   }
@@ -752,13 +624,11 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
   @override
   Widget build(BuildContext context) {
     final d = _detail;
-    final isLab = d?['isLab'] == true;
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(
-          d != null ? '${d['courseCode']} — ${isLab ? 'TH' : 'LT'}' : 'Chi tiết học phần',
+          d != null ? '${d['courseCode']} — N${d['groupNumber'] ?? 1}/T${d['teamNumber'] ?? 1}' : 'Chi tiết học phần',
           style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -775,26 +645,15 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
                 labelColor: AppColors.primary,
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorColor: AppColors.primary,
-                tabs: const [
-                  Tab(text: 'Lịch học'),
-                  Tab(text: 'Sinh viên'),
-                ],
+                tabs: const [Tab(text: 'Lịch học'), Tab(text: 'Sinh viên')],
               ),
             ],
           ),
         ),
         actions: [
           if (d != null) ...[
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-              tooltip: 'Chỉnh sửa học phần',
-              onPressed: _editSection,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              tooltip: 'Xóa học phần',
-              onPressed: _deleteSection,
-            ),
+            IconButton(icon: const Icon(Icons.edit_outlined, color: AppColors.primary), tooltip: 'Chỉnh sửa học phần', onPressed: _editSection),
+            IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), tooltip: 'Xóa học phần', onPressed: _deleteSection),
           ],
         ],
       ),
@@ -802,65 +661,51 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _detail == null
               ? const Center(child: Text('Không tìm thấy học phần'))
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildScheduleTab(),
-                    _buildStudentTab(),
-                  ],
-                ),
+              : TabBarView(controller: _tabController, children: [_buildScheduleTab(), _buildStudentTab()]),
     );
   }
 
   Widget _buildScheduleTab() {
     final d = _detail!;
     final schedules = (d['schedules'] as List? ?? []).cast<Map>();
-    final isLab = d['isLab'] == true;
+    final groupNumber = d['groupNumber'] ?? 1;
+    final teamNumber = d['teamNumber'] ?? 1;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Info card
         _DetailCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      d['courseName']?.toString() ?? '',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  _TypeBadge(isLab: isLab),
+                  Expanded(child: Text(d['courseName']?.toString() ?? '',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+                  _GroupBadge(groupNumber: groupNumber, teamNumber: teamNumber),
                 ],
               ),
               const SizedBox(height: 8),
               _InfoRow(icon: Icons.code, label: 'Mã môn', value: d['courseCode']?.toString() ?? ''),
               _InfoRow(icon: Icons.star_outline, label: 'Tín chỉ', value: '${d['credits'] ?? ''}'),
-              _InfoRow(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Học kỳ',
+              _InfoRow(icon: Icons.group_outlined, label: 'Nhóm', value: '$groupNumber'),
+              _InfoRow(icon: Icons.people_alt_outlined, label: 'Tổ', value: '$teamNumber'),
+              _InfoRow(icon: Icons.calendar_today_outlined, label: 'Học kỳ',
                   value: 'HK${d['semester']} — ${d['academicYear']}'),
               if (d['startDate'] != null)
-                _InfoRow(
-                    icon: Icons.date_range_outlined,
-                    label: 'Thời gian',
+                _InfoRow(icon: Icons.date_range_outlined, label: 'Thời gian',
                     value: '${d['startDate']} → ${d['endDate'] ?? ''}'),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        // Schedules card
         _DetailCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(
-                      child: AdminTheme.sectionTitle('Các ca học (${schedules.length})')),
+                  Expanded(child: AdminTheme.sectionTitle('Các ca học (${schedules.length})')),
                   TextButton.icon(
                     onPressed: _addSchedule,
                     icon: const Icon(Icons.add_circle_outline, size: 18, color: AppColors.primary),
@@ -881,31 +726,35 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
                   final scheduleId = (sch['scheduleId'] as num).toInt();
                   final day = (sch['dayOfWeek'] as num?)?.toInt() ?? 2;
                   final period = (sch['period'] as num?)?.toInt() ?? 1;
+                  final isLab = sch['isLab'] == true;
+                  final accent = isLab ? Colors.orange.shade600 : AppColors.primary;
+                  final bgColor = isLab ? Colors.orange.shade50 : AppColors.primary.withValues(alpha: 0.08);
+                  final borderColor = isLab ? Colors.orange.shade200 : AppColors.primary.withValues(alpha: 0.2);
                   return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                     decoration: BoxDecoration(
-                      border: i < schedules.length - 1
+                      color: isLab ? Colors.orange.shade50.withValues(alpha: 0.4) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: i < schedules.length - 1 && !isLab
                           ? const Border(bottom: BorderSide(color: AppColors.border))
-                          : null,
+                          : isLab ? Border.all(color: Colors.orange.shade200, width: 0.8) : null,
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: 44, height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
+                            color: bgColor,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(_dayLabels[day] ?? 'T$day',
-                                  style: const TextStyle(
-                                      fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
-                              Text('Ca $period',
-                                  style: const TextStyle(fontSize: 10, color: AppColors.primary)),
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent)),
+                              Text('Ca $period', style: TextStyle(fontSize: 10, color: accent)),
                             ],
                           ),
                         ),
@@ -914,33 +763,40 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '${sch['periodStart']} – ${sch['periodEnd']}',
-                                style: const TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                              Row(
+                                children: [
+                                  Text('${sch['periodStart']} – ${sch['periodEnd']}',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
+                                  if (isLab) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade100,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text('TH',
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.orange.shade700)),
+                                    ),
+                                  ],
+                                ],
                               ),
                               if (sch['room'] != null && sch['room'].toString().isNotEmpty)
-                                Text('Phòng: ${sch['room']}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text('Phòng: ${sch['room']}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                               if (sch['lecturer'] != null && sch['lecturer'].toString().isNotEmpty)
-                                Text('GV: ${sch['lecturer']}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text('GV: ${sch['lecturer']}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             ],
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
-                          onPressed: () => _editSchedule(sch),
-                          tooltip: 'Sửa',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          onPressed: () => _editSchedule(sch), tooltip: 'Sửa',
+                          padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
                         IconButton(
                           icon: Icon(Icons.delete_outline, size: 18, color: Colors.red.shade400),
-                          onPressed: () => _deleteSchedule(scheduleId),
-                          tooltip: 'Xóa',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          onPressed: () => _deleteSchedule(scheduleId), tooltip: 'Xóa',
+                          padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
                       ],
                     ),
@@ -956,7 +812,6 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
   Widget _buildStudentTab() {
     final d = _detail!;
     final students = (d['students'] as List? ?? []).cast<Map>();
-
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -966,8 +821,7 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
             children: [
               Row(
                 children: [
-                  Expanded(
-                      child: AdminTheme.sectionTitle('Danh sách sinh viên (${students.length})')),
+                  Expanded(child: AdminTheme.sectionTitle('Danh sách sinh viên (${students.length})')),
                   TextButton.icon(
                     onPressed: _manageStudents,
                     icon: const Icon(Icons.manage_accounts_outlined, size: 18, color: AppColors.primary),
@@ -978,8 +832,7 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
               if (students.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Chưa có sinh viên trong học phần này.',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text('Chưa có sinh viên trong học phần này.', style: TextStyle(color: AppColors.textSecondary)),
                 )
               else
                 ...students.asMap().entries.map((entry) {
@@ -989,22 +842,17 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       border: i < students.length - 1
-                          ? const Border(bottom: BorderSide(color: AppColors.border))
-                          : null,
+                          ? const Border(bottom: BorderSide(color: AppColors.border)) : null,
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 28,
-                          height: 28,
-                          alignment: Alignment.center,
+                          width: 28, height: 28, alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(6),
+                            color: AppColors.surface, borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: Text('${i + 1}',
-                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          child: Text('${i + 1}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1031,11 +879,8 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
 
@@ -1045,7 +890,6 @@ class _AdminSectionDetailScreenState extends State<AdminSectionDetailScreen>
 
 class _SectionFormSheet extends StatefulWidget {
   final AdminRepository repo;
-
   const _SectionFormSheet({required this.repo});
 
   @override
@@ -1056,69 +900,61 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
   final _courseSearchCtrl = TextEditingController();
   List<Map<String, dynamic>> _courseOptions = [];
   Map<String, dynamic>? _selectedCourse;
-
   final _semesterCtrl = TextEditingController();
   final _academicYearCtrl = TextEditingController();
   final _startDateCtrl = TextEditingController();
   final _endDateCtrl = TextEditingController();
-  bool _isLab = false;
+  final _groupNumberCtrl = TextEditingController();
+  final _teamNumberCtrl = TextEditingController();
   bool _saving = false;
 
   @override
   void dispose() {
-    _courseSearchCtrl.dispose();
-    _semesterCtrl.dispose();
-    _academicYearCtrl.dispose();
-    _startDateCtrl.dispose();
-    _endDateCtrl.dispose();
+    _courseSearchCtrl.dispose(); _semesterCtrl.dispose(); _academicYearCtrl.dispose();
+    _startDateCtrl.dispose(); _endDateCtrl.dispose();
+    _groupNumberCtrl.dispose(); _teamNumberCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _searchCourses(String q) async {
-    if (q.trim().isEmpty) {
-      setState(() => _courseOptions = []);
-      return;
-    }
+    if (q.trim().isEmpty) { setState(() => _courseOptions = []); return; }
     try {
       final all = await widget.repo.getCourses();
       final lower = q.toLowerCase();
       setState(() {
         _courseOptions = all.where((c) {
-          final code = (c['courseCode'] ?? '').toString().toLowerCase();
-          final name = (c['courseName'] ?? '').toString().toLowerCase();
-          return code.contains(lower) || name.contains(lower);
+          return (c['courseCode'] ?? '').toString().toLowerCase().contains(lower) ||
+              (c['courseName'] ?? '').toString().toLowerCase().contains(lower);
         }).take(10).toList();
       });
     } catch (_) {}
+  }
+
+  String? _validateGroupTeam(String value, String label) {
+    if (value.isEmpty) { return '$label không được để trống'; }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) { return '$label chỉ được chứa chữ số'; }
+    if (int.parse(value) < 1) { return '$label phải là số nguyên dương'; }
+    return null;
   }
 
   String? _validateDates() {
     final ay = _academicYearCtrl.text.trim();
     final start = _startDateCtrl.text.trim();
     final end = _endDateCtrl.text.trim();
-
-    final ayRegex = RegExp(r'^\d{4}-\d{4}$');
-    if (!ayRegex.hasMatch(ay)) {
-      return 'Năm học phải theo định dạng yyyy-yyyy (ví dụ: 2025-2026)';
-    }
+    if (!RegExp(r'^\d{4}-\d{4}$').hasMatch(ay)) { return 'Năm học phải theo định dạng yyyy-yyyy'; }
     final yearStart = int.parse(ay.substring(0, 4));
     final yearEnd = int.parse(ay.substring(5));
-    if (yearEnd != yearStart + 1) {
-      return 'Năm học không hợp lệ: năm sau phải bằng năm trước + 1';
-    }
-    if (start.isEmpty) return 'Ngày bắt đầu không được để trống';
-    if (end.isEmpty) return 'Ngày kết thúc không được để trống';
-
-    DateTime? startDate, endDate;
+    if (yearEnd != yearStart + 1) { return 'Năm học không hợp lệ: năm sau = năm trước + 1'; }
+    if (start.isEmpty) { return 'Ngày bắt đầu không được để trống'; }
+    if (end.isEmpty) { return 'Ngày kết thúc không được để trống'; }
+    DateTime startDate, endDate;
     try {
       startDate = DateTime.parse(start);
       endDate = DateTime.parse(end);
     } catch (_) {
       return 'Định dạng ngày không hợp lệ (yyyy-MM-dd)';
     }
-    if (!endDate.isAfter(startDate)) {
-      return 'Ngày kết thúc phải sau ngày bắt đầu';
-    }
+    if (!endDate.isAfter(startDate)) { return 'Ngày kết thúc phải sau ngày bắt đầu'; }
     final rangeStart = DateTime(yearStart, 1, 1);
     final rangeEnd = DateTime(yearEnd, 12, 31);
     if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd)) {
@@ -1131,28 +967,21 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
   }
 
   Future<void> _submit() async {
-    if (_selectedCourse == null) {
-      _showSnack('Vui lòng chọn môn học', isError: true);
-      return;
-    }
-    if (_semesterCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng chọn học kỳ', isError: true);
-      return;
-    }
-    if (_academicYearCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng nhập năm học', isError: true);
-      return;
-    }
-    final error = _validateDates();
-    if (error != null) {
-      _showSnack(error, isError: true);
-      return;
-    }
+    if (_selectedCourse == null) { _showSnack('Vui lòng chọn môn học', isError: true); return; }
+    if (_semesterCtrl.text.trim().isEmpty) { _showSnack('Vui lòng chọn học kỳ', isError: true); return; }
+    if (_academicYearCtrl.text.trim().isEmpty) { _showSnack('Vui lòng nhập năm học', isError: true); return; }
+    final groupErr = _validateGroupTeam(_groupNumberCtrl.text.trim(), 'Số nhóm');
+    if (groupErr != null) { _showSnack(groupErr, isError: true); return; }
+    final teamErr = _validateGroupTeam(_teamNumberCtrl.text.trim(), 'Số tổ');
+    if (teamErr != null) { _showSnack(teamErr, isError: true); return; }
+    final dateErr = _validateDates();
+    if (dateErr != null) { _showSnack(dateErr, isError: true); return; }
     setState(() => _saving = true);
     try {
       await widget.repo.createAdminSection({
         'courseId': _selectedCourse!['id'],
-        'isLab': _isLab,
+        'groupNumber': _groupNumberCtrl.text.trim(),
+        'teamNumber': _teamNumberCtrl.text.trim(),
         'semester': _semesterCtrl.text.trim(),
         'academicYear': _academicYearCtrl.text.trim(),
         'startDate': _startDateCtrl.text.trim().isEmpty ? null : _startDateCtrl.text.trim(),
@@ -1172,32 +1001,24 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 1.0,
+      initialChildSize: 0.9, minChildSize: 0.5, maxChildSize: 1.0,
       builder: (_, scrollCtrl) => Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-                ),
+                child: Container(width: 40, height: 4,
+                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Text('Thêm học phần mới',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    const Text('Thêm học phần mới', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                     const Spacer(),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                   ],
@@ -1212,18 +1033,15 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
                     AdminTheme.sectionTitle('Môn học'),
                     TextField(
                       controller: _courseSearchCtrl,
-                      decoration: AdminTheme.inputDecoration(
-                        'Tìm môn học theo mã hoặc tên',
-                        prefixIcon: const Icon(Icons.menu_book_outlined, size: 20),
-                      ),
+                      decoration: AdminTheme.inputDecoration('Tìm môn học theo mã hoặc tên',
+                          prefixIcon: const Icon(Icons.menu_book_outlined, size: 20)),
                       onChanged: _searchCourses,
                     ),
                     if (_courseOptions.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(top: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white, borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.border),
                           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
                         ),
@@ -1262,8 +1080,7 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
                             Expanded(
                               child: Text(
                                 '${_selectedCourse!['courseCode']} — ${_selectedCourse!['courseName']}',
-                                style: const TextStyle(
-                                    fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500),
+                                style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500),
                               ),
                             ),
                           ],
@@ -1271,11 +1088,24 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
                       ),
                     ],
                     const SizedBox(height: 16),
+                    AdminTheme.sectionTitle('Nhóm & Tổ'),
                     Row(
                       children: [
-                        const Text('Loại:', style: TextStyle(fontWeight: FontWeight.w500)),
-                        const SizedBox(width: 12),
-                        _TypeToggle(value: _isLab, onChanged: (v) => setState(() => _isLab = v)),
+                        Expanded(
+                          child: TextField(
+                            controller: _groupNumberCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: AdminTheme.inputDecoration('Số nhóm', hint: 'VD: 1'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _teamNumberCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: AdminTheme.inputDecoration('Số tổ', hint: 'VD: 1'),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -1286,9 +1116,7 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
                           child: DropdownButtonFormField<String>(
                             value: _semesterCtrl.text.isEmpty ? null : _semesterCtrl.text,
                             decoration: AdminTheme.inputDecoration('Học kỳ'),
-                            items: ['1', '2', '3']
-                                .map((s) => DropdownMenuItem(value: s, child: Text('HK $s')))
-                                .toList(),
+                            items: ['1', '2', '3'].map((s) => DropdownMenuItem(value: s, child: Text('HK $s'))).toList(),
                             onChanged: (v) => setState(() => _semesterCtrl.text = v ?? ''),
                           ),
                         ),
@@ -1311,18 +1139,14 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
                     ),
                     const SizedBox(height: 28),
                     SizedBox(
-                      width: double.infinity,
-                      height: 48,
+                      width: double.infinity, height: 48,
                       child: ElevatedButton(
                         style: AdminTheme.primaryButtonStyle(),
                         onPressed: _saving ? null : _submit,
                         child: _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                            ? const SizedBox(width: 20, height: 20,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Thêm học phần',
-                                style: TextStyle(fontSize: 15, color: Colors.white)),
+                            : const Text('Thêm học phần', style: TextStyle(fontSize: 15, color: Colors.white)),
                       ),
                     ),
                   ],
@@ -1337,16 +1161,13 @@ class _SectionFormSheetState extends State<_SectionFormSheet> {
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Form chỉnh sửa thông tin học phần
+// Form chỉnh sửa học phần
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionEditSheet extends StatefulWidget {
@@ -1354,11 +1175,7 @@ class _SectionEditSheet extends StatefulWidget {
   final int sectionId;
   final Map<String, dynamic> detail;
 
-  const _SectionEditSheet({
-    required this.repo,
-    required this.sectionId,
-    required this.detail,
-  });
+  const _SectionEditSheet({required this.repo, required this.sectionId, required this.detail});
 
   @override
   State<_SectionEditSheet> createState() => _SectionEditSheetState();
@@ -1369,6 +1186,8 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
   final _academicYearCtrl = TextEditingController();
   final _startDateCtrl = TextEditingController();
   final _endDateCtrl = TextEditingController();
+  final _groupNumberCtrl = TextEditingController();
+  final _teamNumberCtrl = TextEditingController();
   bool _saving = false;
 
   @override
@@ -1379,84 +1198,70 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
     _academicYearCtrl.text = d['academicYear']?.toString() ?? '';
     _startDateCtrl.text = d['startDate']?.toString() ?? '';
     _endDateCtrl.text = d['endDate']?.toString() ?? '';
+    _groupNumberCtrl.text = d['groupNumber']?.toString() ?? '1';
+    _teamNumberCtrl.text = d['teamNumber']?.toString() ?? '1';
   }
 
   @override
   void dispose() {
-    _semesterCtrl.dispose();
-    _academicYearCtrl.dispose();
-    _startDateCtrl.dispose();
-    _endDateCtrl.dispose();
+    _semesterCtrl.dispose(); _academicYearCtrl.dispose();
+    _startDateCtrl.dispose(); _endDateCtrl.dispose();
+    _groupNumberCtrl.dispose(); _teamNumberCtrl.dispose();
     super.dispose();
   }
 
-  String? _validateAndGetError() {
+  String? _validateGroupTeam(String value, String label) {
+    if (value.isEmpty) { return '$label không được để trống'; }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) { return '$label chỉ được chứa chữ số'; }
+    if (int.parse(value) < 1) { return '$label phải là số nguyên dương'; }
+    return null;
+  }
+
+  String? _validateDates() {
     final ay = _academicYearCtrl.text.trim();
     final start = _startDateCtrl.text.trim();
     final end = _endDateCtrl.text.trim();
-
-    // Validate format năm học yyyy-yyyy
-    final ayRegex = RegExp(r'^\d{4}-\d{4}$');
-    if (!ayRegex.hasMatch(ay)) {
-      return 'Năm học phải theo định dạng yyyy-yyyy (ví dụ: 2025-2026)';
-    }
+    if (!RegExp(r'^\d{4}-\d{4}$').hasMatch(ay)) { return 'Năm học phải theo định dạng yyyy-yyyy'; }
     final yearStart = int.parse(ay.substring(0, 4));
     final yearEnd = int.parse(ay.substring(5));
-    if (yearEnd != yearStart + 1) {
-      return 'Năm học không hợp lệ: năm sau phải bằng năm trước + 1';
-    }
-
-    // Validate ngày không trống
-    if (start.isEmpty) return 'Ngày bắt đầu không được để trống';
-    if (end.isEmpty) return 'Ngày kết thúc không được để trống';
-
-    // Parse ngày (định dạng yyyy-MM-dd từ backend)
-    DateTime? startDate, endDate;
+    if (yearEnd != yearStart + 1) { return 'Năm học không hợp lệ: năm sau = năm trước + 1'; }
+    if (start.isEmpty) { return 'Ngày bắt đầu không được để trống'; }
+    if (end.isEmpty) { return 'Ngày kết thúc không được để trống'; }
+    DateTime startDate, endDate;
     try {
       startDate = DateTime.parse(start);
       endDate = DateTime.parse(end);
     } catch (_) {
       return 'Định dạng ngày không hợp lệ (yyyy-MM-dd)';
     }
-
-    // Validate endDate > startDate
-    if (!endDate.isAfter(startDate)) {
-      return 'Ngày kết thúc phải sau ngày bắt đầu';
-    }
-
-    // Validate nằm trong phạm vi năm học
+    if (!endDate.isAfter(startDate)) { return 'Ngày kết thúc phải sau ngày bắt đầu'; }
     final rangeStart = DateTime(yearStart, 1, 1);
     final rangeEnd = DateTime(yearEnd, 12, 31);
     if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd)) {
-      return 'Ngày bắt đầu phải nằm trong năm học $ay ($yearStart-01-01 đến $yearEnd-12-31)';
+      return 'Ngày bắt đầu phải nằm trong năm học $ay';
     }
     if (endDate.isBefore(rangeStart) || endDate.isAfter(rangeEnd)) {
-      return 'Ngày kết thúc phải nằm trong năm học $ay ($yearStart-01-01 đến $yearEnd-12-31)';
+      return 'Ngày kết thúc phải nằm trong năm học $ay';
     }
-
     return null;
   }
 
   Future<void> _submit() async {
-    if (_semesterCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng chọn học kỳ', isError: true);
-      return;
-    }
-    if (_academicYearCtrl.text.trim().isEmpty) {
-      _showSnack('Vui lòng nhập năm học', isError: true);
-      return;
-    }
-    final error = _validateAndGetError();
-    if (error != null) {
-      _showSnack(error, isError: true);
-      return;
-    }
-
+    if (_semesterCtrl.text.trim().isEmpty) { _showSnack('Vui lòng chọn học kỳ', isError: true); return; }
+    if (_academicYearCtrl.text.trim().isEmpty) { _showSnack('Vui lòng nhập năm học', isError: true); return; }
+    final groupErr = _validateGroupTeam(_groupNumberCtrl.text.trim(), 'Số nhóm');
+    if (groupErr != null) { _showSnack(groupErr, isError: true); return; }
+    final teamErr = _validateGroupTeam(_teamNumberCtrl.text.trim(), 'Số tổ');
+    if (teamErr != null) { _showSnack(teamErr, isError: true); return; }
+    final dateErr = _validateDates();
+    if (dateErr != null) { _showSnack(dateErr, isError: true); return; }
     setState(() => _saving = true);
     try {
       await widget.repo.updateAdminSection(widget.sectionId, {
         'semester': _semesterCtrl.text.trim(),
         'academicYear': _academicYearCtrl.text.trim(),
+        'groupNumber': _groupNumberCtrl.text.trim(),
+        'teamNumber': _teamNumberCtrl.text.trim(),
         'startDate': _startDateCtrl.text.trim().isEmpty ? null : _startDateCtrl.text.trim(),
         'endDate': _endDateCtrl.text.trim().isEmpty ? null : _endDateCtrl.text.trim(),
       });
@@ -1473,35 +1278,26 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
   @override
   Widget build(BuildContext context) {
     final d = widget.detail;
-    final isLab = d['isLab'] == true;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 1.0,
+      initialChildSize: 0.85, minChildSize: 0.5, maxChildSize: 1.0,
       builder: (_, scrollCtrl) => Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-                ),
+                child: Container(width: 40, height: 4,
+                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Text('Chỉnh sửa học phần',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    const Text('Chỉnh sửa học phần', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                     const Spacer(),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                   ],
@@ -1513,55 +1309,50 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
                   controller: scrollCtrl,
                   padding: const EdgeInsets.all(20),
                   children: [
-                    // Hiển thị thông tin môn học (readonly)
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.surface, borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppColors.border),
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isLab ? Colors.orange.shade50 : AppColors.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: isLab ? Colors.orange.shade200 : AppColors.primary.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: Text(
-                              isLab ? 'TH' : 'LT',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isLab ? Colors.orange.shade700 : AppColors.primary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  d['courseName']?.toString() ?? '',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  d['courseCode']?.toString() ?? '',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                ),
+                                Text(d['courseName']?.toString() ?? '',
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Text(d['courseCode']?.toString() ?? '',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                               ],
                             ),
                           ),
                           const Icon(Icons.lock_outline, size: 16, color: AppColors.textSecondary),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    AdminTheme.sectionTitle('Nhóm & Tổ'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _groupNumberCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: AdminTheme.inputDecoration('Số nhóm', hint: 'VD: 1'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _teamNumberCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: AdminTheme.inputDecoration('Số tổ', hint: 'VD: 1'),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     AdminTheme.sectionTitle('Thông tin học kỳ'),
@@ -1571,9 +1362,7 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
                           child: DropdownButtonFormField<String>(
                             value: _semesterCtrl.text.isEmpty ? null : _semesterCtrl.text,
                             decoration: AdminTheme.inputDecoration('Học kỳ'),
-                            items: ['1', '2', '3']
-                                .map((s) => DropdownMenuItem(value: s, child: Text('HK $s')))
-                                .toList(),
+                            items: ['1', '2', '3'].map((s) => DropdownMenuItem(value: s, child: Text('HK $s'))).toList(),
                             onChanged: (v) => setState(() => _semesterCtrl.text = v ?? ''),
                           ),
                         ),
@@ -1596,18 +1385,14 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
                     ),
                     const SizedBox(height: 28),
                     SizedBox(
-                      width: double.infinity,
-                      height: 48,
+                      width: double.infinity, height: 48,
                       child: ElevatedButton(
                         style: AdminTheme.primaryButtonStyle(),
                         onPressed: _saving ? null : _submit,
                         child: _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                            ? const SizedBox(width: 20, height: 20,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Lưu thay đổi',
-                                style: TextStyle(fontSize: 15, color: Colors.white)),
+                            : const Text('Lưu thay đổi', style: TextStyle(fontSize: 15, color: Colors.white)),
                       ),
                     ),
                   ],
@@ -1622,11 +1407,8 @@ class _SectionEditSheetState extends State<_SectionEditSheet> {
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
 
@@ -1639,11 +1421,7 @@ class _SectionScheduleFormSheet extends StatefulWidget {
   final int sectionId;
   final Map<String, dynamic>? existing;
 
-  const _SectionScheduleFormSheet({
-    required this.repo,
-    required this.sectionId,
-    this.existing,
-  });
+  const _SectionScheduleFormSheet({required this.repo, required this.sectionId, this.existing});
 
   @override
   State<_SectionScheduleFormSheet> createState() => _SectionScheduleFormSheetState();
@@ -1652,6 +1430,7 @@ class _SectionScheduleFormSheet extends StatefulWidget {
 class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
   int? _dayOfWeek;
   int? _period;
+  bool _isLab = false;
   final _roomCtrl = TextEditingController();
   final _lecturerCtrl = TextEditingController();
   bool _saving = false;
@@ -1665,50 +1444,29 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
       _period = (e['period'] as num?)?.toInt();
       _roomCtrl.text = e['room']?.toString() ?? '';
       _lecturerCtrl.text = e['lecturer']?.toString() ?? '';
+      final v = e['isLab'];
+      _isLab = (v is bool) ? v : (v == 1 || v == true);
     }
   }
 
   @override
-  void dispose() {
-    _roomCtrl.dispose();
-    _lecturerCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _roomCtrl.dispose(); _lecturerCtrl.dispose(); super.dispose(); }
 
   Future<void> _submit() async {
-    if (_dayOfWeek == null) {
-      _showSnack('Vui lòng chọn thứ', isError: true);
-      return;
-    }
-    if (_period == null) {
-      _showSnack('Vui lòng chọn ca học', isError: true);
-      return;
-    }
+    if (_dayOfWeek == null) { _showSnack('Vui lòng chọn thứ', isError: true); return; }
+    if (_period == null) { _showSnack('Vui lòng chọn ca học', isError: true); return; }
     final room = _roomCtrl.text.trim();
     final lecturer = _lecturerCtrl.text.trim();
-    if (room.isEmpty) {
-      _showSnack('Phòng học không được để trống', isError: true);
-      return;
+    if (room.isEmpty) { _showSnack('Phòng học không được để trống', isError: true); return; }
+    if (!RegExp(r'^[\w\s.\-]+$', unicode: true).hasMatch(room)) {
+      _showSnack('Tên phòng không được chứa ký tự đặc biệt', isError: true); return;
     }
-    if (!RegExp(r'^[\p{L}\d\s.\-]+$', unicode: true).hasMatch(room)) {
-      _showSnack('Tên phòng không được chứa ký tự đặc biệt', isError: true);
-      return;
-    }
-    if (lecturer.isEmpty) {
-      _showSnack('Giảng viên không được để trống', isError: true);
-      return;
-    }
-    if (!RegExp(r'^[\p{L}\s]+$', unicode: true).hasMatch(lecturer)) {
-      _showSnack('Tên giảng viên không được chứa số hoặc ký tự đặc biệt', isError: true);
-      return;
+    if (lecturer.isEmpty) { _showSnack('Giảng viên không được để trống', isError: true); return; }
+    if (!RegExp(r'^[^\d\W]+(?:\s[^\d\W]+)*$', unicode: true).hasMatch(lecturer)) {
+      _showSnack('Tên giảng viên không được chứa số hoặc ký tự đặc biệt', isError: true); return;
     }
     setState(() => _saving = true);
-    final payload = {
-      'dayOfWeek': _dayOfWeek,
-      'period': _period,
-      'room': room,
-      'lecturer': lecturer,
-    };
+    final payload = {'dayOfWeek': _dayOfWeek, 'period': _period, 'room': room, 'lecturer': lecturer, 'isLab': _isLab};
     try {
       if (widget.existing != null) {
         final scheduleId = (widget.existing!['scheduleId'] as num).toInt();
@@ -1733,25 +1491,18 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
     final isEdit = widget.existing != null;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
+      initialChildSize: 0.6, minChildSize: 0.4, maxChildSize: 0.95,
       builder: (_, scrollCtrl) => Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-                ),
+                child: Container(width: 40, height: 4,
+                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1770,6 +1521,15 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
                   controller: scrollCtrl,
                   padding: const EdgeInsets.all(20),
                   children: [
+                    // Toggle LT/TH
+                    Row(
+                      children: [
+                        const Text('Loại ca:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        const SizedBox(width: 12),
+                        _LabToggle(value: _isLab, onChanged: (v) => setState(() => _isLab = v)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -1778,8 +1538,7 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
                             decoration: AdminTheme.inputDecoration('Thứ'),
                             isExpanded: true,
                             items: _dayLabels.entries
-                                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                                .toList(),
+                                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
                             onChanged: (v) => setState(() => _dayOfWeek = v),
                           ),
                         ),
@@ -1791,9 +1550,7 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
                             isExpanded: true,
                             items: _periodLabels.entries
                                 .map((e) => DropdownMenuItem(
-                                    value: e.key,
-                                    child: Text(e.value, overflow: TextOverflow.ellipsis)))
-                                .toList(),
+                                    value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (v) => setState(() => _period = v),
                           ),
                         ),
@@ -1813,15 +1570,12 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
-                      width: double.infinity,
-                      height: 48,
+                      width: double.infinity, height: 48,
                       child: ElevatedButton(
                         style: AdminTheme.primaryButtonStyle(),
                         onPressed: _saving ? null : _submit,
                         child: _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                            ? const SizedBox(width: 20, height: 20,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                             : Text(isEdit ? 'Lưu thay đổi' : 'Thêm ca học',
                                 style: const TextStyle(fontSize: 15, color: Colors.white)),
@@ -1839,16 +1593,13 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Student Picker (chọn thủ công)
+// Student Picker
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionStudentPickerScreen extends StatefulWidget {
@@ -1857,9 +1608,7 @@ class _SectionStudentPickerScreen extends StatefulWidget {
   final List<int> currentStudentIds;
 
   const _SectionStudentPickerScreen({
-    required this.repo,
-    required this.sectionId,
-    required this.currentStudentIds,
+    required this.repo, required this.sectionId, required this.currentStudentIds,
   });
 
   @override
@@ -1883,20 +1632,14 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
   }
 
   @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _searchCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadStudents() async {
     setState(() => _loading = true);
     try {
       final list = await widget.repo.getAllStudentsForSchedule();
       if (!mounted) return;
-      setState(() {
-        _allStudents = list;
-        _filtered = list;
-      });
+      setState(() { _allStudents = list; _filtered = list; });
     } on DioException catch (e) {
       _showSnack(e.response?.data?['message'] ?? 'Không tải được danh sách sinh viên', isError: true);
     } finally {
@@ -1910,9 +1653,8 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
       _filtered = q.isEmpty
           ? _allStudents
           : _allStudents.where((s) {
-              final name = (s['fullName'] ?? '').toString().toLowerCase();
-              final code = (s['studentCode'] ?? '').toString().toLowerCase();
-              return name.contains(q) || code.contains(q);
+              return (s['fullName'] ?? '').toString().toLowerCase().contains(q) ||
+                  (s['studentCode'] ?? '').toString().toLowerCase().contains(q);
             }).toList();
     });
   }
@@ -1935,27 +1677,19 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AdminTheme.appBar(
-        context,
-        'Chọn sinh viên',
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
-                : const Text('Xác nhận',
-                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+      appBar: AdminTheme.appBar(context, 'Chọn sinh viên', actions: [
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(width: 18, height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+              : const Text('Xác nhận', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+        ),
+      ]),
       body: Column(
         children: [
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            color: Colors.white, padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchCtrl,
               decoration: AdminTheme.inputDecoration('Tìm theo tên hoặc MSSV...',
@@ -1963,8 +1697,7 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
             ),
           ),
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            color: Colors.white, padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: Row(
               children: [
                 Text('Đã chọn ${_selectedIds.length} / ${_allStudents.length} sinh viên',
@@ -1972,11 +1705,8 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
                 const Spacer(),
                 TextButton(
                   onPressed: () => setState(() {
-                    if (_selectedIds.length == _allStudents.length) {
-                      _selectedIds.clear();
-                    } else {
-                      _selectedIds.addAll(_allStudents.map((s) => (s['id'] as num).toInt()));
-                    }
+                    if (_selectedIds.length == _allStudents.length) _selectedIds.clear();
+                    else _selectedIds.addAll(_allStudents.map((s) => (s['id'] as num).toInt()));
                   }),
                   child: Text(
                     _selectedIds.length == _allStudents.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả',
@@ -2001,50 +1731,33 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                             leading: Container(
-                              width: 40,
-                              height: 40,
+                              width: 40, height: 40,
                               decoration: BoxDecoration(
-                                color: selected
-                                    ? AppColors.primary.withValues(alpha: 0.1)
-                                    : AppColors.surface,
+                                color: selected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selected ? AppColors.primary : AppColors.border,
-                                ),
+                                border: Border.all(color: selected ? AppColors.primary : AppColors.border),
                               ),
                               child: Center(
                                 child: Text(
                                   (s['fullName']?.toString() ?? '?').substring(0, 1).toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: selected ? AppColors.primary : AppColors.textSecondary,
-                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w700,
+                                      color: selected ? AppColors.primary : AppColors.textSecondary),
                                 ),
                               ),
                             ),
                             title: Text(s['fullName']?.toString() ?? '',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w500,
+                                style: TextStyle(fontWeight: FontWeight.w500,
                                     color: selected ? AppColors.primary : AppColors.textPrimary)),
                             subtitle: Text(s['studentCode']?.toString() ?? '',
                                 style: const TextStyle(fontSize: 12)),
                             trailing: Checkbox(
-                              value: selected,
-                              activeColor: AppColors.primary,
+                              value: selected, activeColor: AppColors.primary,
                               onChanged: (_) => setState(() {
-                                if (selected) {
-                                  _selectedIds.remove(id);
-                                } else {
-                                  _selectedIds.add(id);
-                                }
+                                if (selected) _selectedIds.remove(id); else _selectedIds.add(id);
                               }),
                             ),
                             onTap: () => setState(() {
-                              if (selected) {
-                                _selectedIds.remove(id);
-                              } else {
-                                _selectedIds.add(id);
-                              }
+                              if (selected) _selectedIds.remove(id); else _selectedIds.add(id);
                             }),
                           );
                         },
@@ -2057,15 +1770,10 @@ class _SectionStudentPickerScreenState extends State<_SectionStudentPickerScreen
 
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
-    if (isError) {
-      AdminNotification.showError(context, msg);
-    } else {
-      AdminNotification.show(context, msg);
-    }
+    if (isError) AdminNotification.showError(context, msg);
+    else AdminNotification.show(context, msg);
   }
 }
-
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Widgets
@@ -2077,11 +1785,9 @@ class _DetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        width: double.infinity, padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white, borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
         ),
         child: child,
@@ -2092,7 +1798,6 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-
   const _InfoRow({required this.icon, required this.label, required this.value});
 
   @override
@@ -2104,94 +1809,33 @@ class _InfoRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text('$label: ', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             Expanded(
-              child: Text(value,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+              child: Text(value, style: const TextStyle(
+                  fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
             ),
           ],
         ),
       );
 }
 
-class _TypeBadge extends StatelessWidget {
-  final bool isLab;
-  const _TypeBadge({required this.isLab});
+class _GroupBadge extends StatelessWidget {
+  final dynamic groupNumber;
+  final dynamic teamNumber;
+  const _GroupBadge({required this.groupNumber, required this.teamNumber});
 
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isLab ? Colors.orange.shade100 : AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          isLab ? 'Thực hành' : 'Lý thuyết',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: isLab ? Colors.orange.shade700 : AppColors.primary,
-          ),
-        ),
+        child: Text('N$groupNumber / T$teamNumber',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
       );
-}
-
-class _TypeToggle extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _TypeToggle({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          _ToggleChip(label: 'Lý thuyết', selected: !value, onTap: () => onChanged(false)),
-          const SizedBox(width: 8),
-          _ToggleChip(
-              label: 'Thực hành',
-              selected: value,
-              onTap: () => onChanged(true),
-              selectedColor: Colors.orange.shade600),
-        ],
-      );
-}
-
-class _ToggleChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color? selectedColor;
-
-  const _ToggleChip(
-      {required this.label, required this.selected, required this.onTap, this.selectedColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selectedColor ?? AppColors.primary;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.1) : AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: selected ? color : AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            color: selected ? color : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _DateField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
-
   const _DateField({required this.label, required this.controller});
 
   @override
@@ -2202,10 +1846,8 @@ class _DateFieldState extends State<_DateField> {
   Future<void> _pick() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
+      context: context, initialDate: now,
+      firstDate: DateTime(2020), lastDate: DateTime(2035),
     );
     if (picked != null) {
       widget.controller.text =
@@ -2215,12 +1857,57 @@ class _DateFieldState extends State<_DateField> {
 
   @override
   Widget build(BuildContext context) => TextField(
-        controller: widget.controller,
-        readOnly: true,
-        onTap: _pick,
+        controller: widget.controller, readOnly: true, onTap: _pick,
         decoration: AdminTheme.inputDecoration(widget.label,
             prefixIcon: const Icon(Icons.calendar_today_outlined, size: 18)),
       );
+}
+
+class _LabToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _LabToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LabChip(label: 'Lý thuyết', selected: !value, color: AppColors.primary, onTap: () => onChanged(false)),
+        const SizedBox(width: 8),
+        _LabChip(label: 'Thực hành', selected: value, color: Colors.orange.shade600, onTap: () => onChanged(true)),
+      ],
+    );
+  }
+}
+
+class _LabChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+  const _LabChip({required this.label, required this.selected, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.12) : AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: selected ? color : AppColors.border, width: selected ? 1.5 : 1),
+        ),
+        child: Text(label,
+            style: TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600,
+              color: selected ? color : AppColors.textSecondary,
+            )),
+      ),
+    );
+  }
 }
 
 class _FilterDropdown extends StatelessWidget {
@@ -2231,11 +1918,8 @@ class _FilterDropdown extends StatelessWidget {
   final ValueChanged<String?> onChanged;
 
   const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    this.itemLabel,
+    required this.label, required this.value, required this.items,
+    required this.onChanged, this.itemLabel,
   });
 
   @override

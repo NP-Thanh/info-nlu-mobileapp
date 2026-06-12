@@ -13,4 +13,5 @@ public class SectionScheduleResponse {
     private String periodEnd;
     private String room;
     private String lecturer;
+    private Boolean isLab;
 }

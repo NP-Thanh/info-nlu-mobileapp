@@ -10,4 +10,5 @@ public class CreateSectionScheduleRequest {
     private Integer period;
     private String room;
     private String lecturer;
+    private Boolean isLab;
 }

@@ -54,7 +54,6 @@ public class GradeService {
 
         Map<String, GradeItemResponse> itemByCode = new LinkedHashMap<>();
         for (Enrollment enrollment : enrollments) {
-            if (Boolean.TRUE.equals(enrollment.getSection().getIsLab())) continue; // bỏ qua TH
             String code = enrollment.getSection().getCourse().getCourseCode();
             Grade g = gradeByEnrollmentId.get(enrollment.getId());
 

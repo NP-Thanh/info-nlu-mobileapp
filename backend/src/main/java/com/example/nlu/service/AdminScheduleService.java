@@ -113,10 +113,12 @@ public class AdminScheduleService {
             }
         }
 
-        // Tìm hoặc tạo section cho course + semester + year + isLab
+        // Tìm hoặc tạo section cho course + semester + year + group + team
         Boolean isLab = Boolean.TRUE.equals(req.getIsLab());
+        Integer groupNumber = req.getGroupNumber() != null ? req.getGroupNumber() : 1;
+        Integer teamNumber = req.getTeamNumber() != null ? req.getTeamNumber() : 1;
         Section section = sectionRepository
-            .findByCourseAndSemesterAndYear(req.getCourseId(), req.getSemester(), req.getAcademicYear(), isLab)
+            .findByCourseAndSemesterAndYearAndGroup(req.getCourseId(), req.getSemester(), req.getAcademicYear(), groupNumber, teamNumber)
             .stream().findFirst().orElseGet(() -> {
                 Section sec = new Section();
                 sec.setCourse(course);
@@ -124,7 +126,8 @@ public class AdminScheduleService {
                 sec.setAcademicYear(req.getAcademicYear());
                 sec.setStartDate(req.getStartDate());
                 sec.setEndDate(req.getEndDate());
-                sec.setIsLab(isLab);
+                sec.setGroupNumber(groupNumber);
+                sec.setTeamNumber(teamNumber);
                 return sectionRepository.save(sec);
             });
 
@@ -147,6 +150,7 @@ public class AdminScheduleService {
         schedule.setLecturer(req.getLecturer());
         schedule.setDayOfWeek(req.getDayOfWeek());
         schedule.setPeriod(req.getPeriod());
+        schedule.setIsLab(isLab);
         schedule.setIsDeleted(false);
         scheduleRepository.save(schedule);
 
@@ -428,7 +432,8 @@ public class AdminScheduleService {
                             .courseCode(sec.getCourse().getCourseCode())
                             .courseName(sec.getCourse().getCourseName())
                             .credits(sec.getCourse().getCredits())
-                            .isLab(sec.getIsLab())
+                            .groupNumber(sec.getGroupNumber())
+                            .teamNumber(sec.getTeamNumber())
                             .semester(sec.getSemester())
                             .academicYear(sec.getAcademicYear())
                             .startDate(sec.getStartDate() != null ? sec.getStartDate().format(fmt) : null)
@@ -456,12 +461,13 @@ public class AdminScheduleService {
         if (req.getSemester() == null || req.getSemester().isBlank()) throw new IllegalArgumentException("Vui lòng nhập học kỳ");
         if (req.getAcademicYear() == null || req.getAcademicYear().isBlank()) throw new IllegalArgumentException("Vui lòng nhập năm học");
         validateSectionDates(req.getAcademicYear().trim(), req.getStartDate(), req.getEndDate());
+        Integer groupNumber = validateGroupOrTeam(req.getGroupNumber(), "Số nhóm");
+        Integer teamNumber = validateGroupOrTeam(req.getTeamNumber(), "Số tổ");
         Course course = courseRepository.findById(req.getCourseId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy môn học"));
-        Boolean isLab = Boolean.TRUE.equals(req.getIsLab());
-        if (sectionRepository.existsByCourse_IdAndSemesterAndAcademicYearAndIsLabAndIsDeletedFalse(
-                req.getCourseId(), req.getSemester().trim(), req.getAcademicYear().trim(), isLab)) {
-            throw new IllegalArgumentException("Học phần này đã tồn tại (cùng môn, kỳ, năm, loại LT/TH)");
+        if (sectionRepository.existsByCourse_IdAndSemesterAndAcademicYearAndGroupNumberAndTeamNumberAndIsDeletedFalse(
+                req.getCourseId(), req.getSemester().trim(), req.getAcademicYear().trim(), groupNumber, teamNumber)) {
+            throw new IllegalArgumentException("Học phần này đã tồn tại (cùng môn, kỳ, năm, nhóm, tổ)");
         }
         Section sec = new Section();
         sec.setCourse(course);
@@ -469,7 +475,8 @@ public class AdminScheduleService {
         sec.setAcademicYear(req.getAcademicYear().trim());
         sec.setStartDate(req.getStartDate());
         sec.setEndDate(req.getEndDate());
-        sec.setIsLab(isLab);
+        sec.setGroupNumber(groupNumber);
+        sec.setTeamNumber(teamNumber);
         sectionRepository.save(sec);
         return buildSectionDetail(sec);
     }
@@ -487,6 +494,8 @@ public class AdminScheduleService {
         sec.setStartDate(startDate);
         sec.setEndDate(endDate);
         if (req.getSemester() != null && !req.getSemester().isBlank()) sec.setSemester(req.getSemester().trim());
+        if (req.getGroupNumber() != null) sec.setGroupNumber(validateGroupOrTeam(req.getGroupNumber(), "Số nhóm"));
+        if (req.getTeamNumber() != null) sec.setTeamNumber(validateGroupOrTeam(req.getTeamNumber(), "Số tổ"));
         sectionRepository.save(sec);
         return buildSectionDetail(sec);
     }
@@ -589,6 +598,7 @@ public class AdminScheduleService {
         schedule.setPeriod(req.getPeriod());
         schedule.setRoom(req.getRoom());
         schedule.setLecturer(req.getLecturer());
+        schedule.setIsLab(Boolean.TRUE.equals(req.getIsLab()));
         schedule.setIsDeleted(false);
         scheduleRepository.save(schedule);
         return buildSectionDetail(sec);
@@ -638,6 +648,7 @@ public class AdminScheduleService {
         schedule.setPeriod(newPeriod);
         schedule.setRoom(newRoom);
         schedule.setLecturer(newLecturer);
+        if (req.getIsLab() != null) schedule.setIsLab(req.getIsLab());
         scheduleRepository.save(schedule);
         return buildSectionDetail(sec);
     }
@@ -698,6 +709,7 @@ public class AdminScheduleService {
                             .periodEnd(times[1])
                             .room(s.getRoom())
                             .lecturer(s.getLecturer())
+                            .isLab(s.getIsLab())
                             .build();
                 }).collect(Collectors.toList());
         List<StudentInScheduleResponse> students = enrollmentRepository.findBySectionIdWithStudent(sec.getId())
@@ -712,7 +724,8 @@ public class AdminScheduleService {
                 .courseCode(sec.getCourse().getCourseCode())
                 .courseName(sec.getCourse().getCourseName())
                 .credits(sec.getCourse().getCredits())
-                .isLab(sec.getIsLab())
+                .groupNumber(sec.getGroupNumber())
+                .teamNumber(sec.getTeamNumber())
                 .semester(sec.getSemester())
                 .academicYear(sec.getAcademicYear())
                 .startDate(sec.getStartDate() != null ? sec.getStartDate().format(fmt) : null)
@@ -780,7 +793,7 @@ public class AdminScheduleService {
             .courseCode(sec.getCourse().getCourseCode())
             .courseName(sec.getCourse().getCourseName())
             .credits(sec.getCourse().getCredits())
-            .isLab(sec.getIsLab())
+            .isLab(s.getIsLab())
             .semester(sec.getSemester())
             .academicYear(sec.getAcademicYear())
             .room(s.getRoom())
@@ -804,7 +817,7 @@ public class AdminScheduleService {
             .courseCode(sec.getCourse().getCourseCode())
             .courseName(sec.getCourse().getCourseName())
             .credits(sec.getCourse().getCredits())
-            .isLab(sec.getIsLab())
+            .isLab(s.getIsLab())
             .semester(sec.getSemester())
             .academicYear(sec.getAcademicYear())
             .startDate(sec.getStartDate() != null ? sec.getStartDate().format(fmt) : null)
@@ -817,6 +830,23 @@ public class AdminScheduleService {
             .periodEnd(times[1])
             .students(students)
             .build();
+    }
+
+    /**
+     * Validate số nhóm hoặc số tổ:
+     * - Không được null/trống
+     * - Chỉ chứa chữ số, không chứa chữ cái hay ký tự đặc biệt
+     * - Phải là số nguyên dương
+     */
+    private Integer validateGroupOrTeam(String value, String label) {
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException(label + " không được để trống");
+        if (!value.trim().matches("^[0-9]+$"))
+            throw new IllegalArgumentException(label + " chỉ được chứa chữ số (không được có chữ cái hoặc ký tự đặc biệt)");
+        int num = Integer.parseInt(value.trim());
+        if (num < 1)
+            throw new IllegalArgumentException(label + " phải là số nguyên dương");
+        return num;
     }
 
     private String getCellString(Row row, Map<String, Integer> colIndex, String col) {

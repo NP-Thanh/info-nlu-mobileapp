@@ -175,7 +175,8 @@ public class DataSeeder implements CommandLineRunner {
             section.setAcademicYear(academicYear);
             section.setStartDate(startDate);
             section.setEndDate(endDate);
-            section.setIsLab(false);
+            section.setGroupNumber(1);
+            section.setTeamNumber(1);
             sectionRepository.save(section);
 
             // Enrollment: sinh viên đăng ký section này
@@ -191,6 +192,7 @@ public class DataSeeder implements CommandLineRunner {
             schedule.setRoom(c.room());
             schedule.setDayOfWeek(c.dayOfWeek());
             schedule.setPeriod(c.period());
+            schedule.setIsLab(false);
             scheduleRepository.save(schedule);
         }
         log.info("Seeded HK{} {} — {} courses", semester, academicYear, courses.size());
@@ -264,8 +266,7 @@ public class DataSeeder implements CommandLineRunner {
 
         for (GradeData gd : gradeList) {
             enrollments.stream()
-                    .filter(e -> e.getSection().getCourse().getCourseCode().equals(gd.courseCode())
-                            && !Boolean.TRUE.equals(e.getSection().getIsLab()))
+                    .filter(e -> e.getSection().getCourse().getCourseCode().equals(gd.courseCode()))
                     .findFirst()
                     .ifPresent(enrollment -> {
                         Grade grade = new Grade();

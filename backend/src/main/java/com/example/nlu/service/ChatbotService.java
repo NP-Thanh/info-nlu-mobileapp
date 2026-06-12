@@ -198,7 +198,6 @@ public class ChatbotService {
 
         List<Enrollment> enrollments = enrollmentRepository.findByStudentAndSemester(studentCode, ay, sem)
                 .stream()
-                .filter(e -> !Boolean.TRUE.equals(e.getSection().getIsLab()))
                 .collect(Collectors.toList());
         if (enrollments.isEmpty()) return "Không có dữ liệu đăng ký môn học kỳ " + sem + " năm " + ay + ".";
 

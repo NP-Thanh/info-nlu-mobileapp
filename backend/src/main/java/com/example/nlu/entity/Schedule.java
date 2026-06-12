@@ -30,6 +30,10 @@ public class Schedule {
      */
     private Integer period;
 
+    /** true nếu là ca thực hành (TH), false nếu lý thuyết (LT) */
+    @Column(name = "is_lab")
+    private Boolean isLab = false;
+
     /** Soft delete flag */
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;

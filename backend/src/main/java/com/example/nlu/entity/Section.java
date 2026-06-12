@@ -39,9 +39,13 @@ public class Section {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    /** true nếu là nhóm thực hành (TH), false nếu lý thuyết (LT) */
-    @Column(name = "is_lab")
-    private Boolean isLab = false;
+    /** Số nhóm (ví dụ: 1, 2, 3) */
+    @Column(name = "group_number", nullable = false, columnDefinition = "INT DEFAULT 1")
+    private Integer groupNumber = 1;
+
+    /** Số tổ (ví dụ: 1, 2, 3) */
+    @Column(name = "team_number", nullable = false, columnDefinition = "INT DEFAULT 1")
+    private Integer teamNumber = 1;
 
     /** Soft delete */
     @Column(name = "is_deleted", nullable = false)
