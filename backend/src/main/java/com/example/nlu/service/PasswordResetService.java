@@ -1,9 +1,7 @@
 package com.example.nlu.service;
 
-import com.example.nlu.entity.PasswordReset;
 import com.example.nlu.entity.Student;
 import com.example.nlu.entity.User;
-import com.example.nlu.repo.PasswordResetRepository;
 import com.example.nlu.repo.StudentRepository;
 import com.example.nlu.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +24,6 @@ public class PasswordResetService {
 
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
-    private final PasswordResetRepository passwordResetRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
 
@@ -64,14 +61,6 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
-
-        // Lưu log vào bảng password_resets
-        PasswordReset log = new PasswordReset();
-        log.setStudentCode(studentCode);
-        log.setDateOfBirth(dob);
-        log.setNewPassword("[HASHED]");
-        log.setCreatedAt(LocalDateTime.now());
-        passwordResetRepository.save(log);
 
         // Gửi email
         sendResetEmail(user.getEmail(), student.getFullName(), studentCode, newPassword);

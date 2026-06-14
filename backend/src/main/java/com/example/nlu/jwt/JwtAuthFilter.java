@@ -45,8 +45,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
 
+                // Với STUDENT, dùng studentCode làm principal để controller query đúng
+                String studentCode = jwtUtil.extractStudentCode(token);
+                String principal = ("STUDENT".equals(role) && studentCode != null) ? studentCode : username;
+
                 var auth = new UsernamePasswordAuthenticationToken(
-                        username, null,
+                        principal, null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);

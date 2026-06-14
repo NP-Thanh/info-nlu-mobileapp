@@ -1462,8 +1462,8 @@ class _SectionScheduleFormSheetState extends State<_SectionScheduleFormSheet> {
       _showSnack('Tên phòng không được chứa ký tự đặc biệt', isError: true); return;
     }
     if (lecturer.isEmpty) { _showSnack('Giảng viên không được để trống', isError: true); return; }
-    if (!RegExp(r'^[^\d\W]+(?:\s[^\d\W]+)*$', unicode: true).hasMatch(lecturer)) {
-      _showSnack('Tên giảng viên không được chứa số hoặc ký tự đặc biệt', isError: true); return;
+    if (RegExp(r'[0-9]').hasMatch(lecturer)) {
+      _showSnack('Tên giảng viên không được chứa số', isError: true); return;
     }
     setState(() => _saving = true);
     final payload = {'dayOfWeek': _dayOfWeek, 'period': _period, 'room': room, 'lecturer': lecturer, 'isLab': _isLab};

@@ -49,14 +49,13 @@ public class AuthService {
             throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
         }
 
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-        log.info("Login success for: {}", user.getUsername());
-
         if (user.getRole() == null) {
             throw new RuntimeException("Tài khoản chưa được phân quyền");
         }
 
         if (user.getRole() == Role.ADMIN) {
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+            log.info("Login success for admin: {}", user.getUsername());
             return new LoginResponse(token, user.getUsername(), user.getUsername(), user.getRole().name());
         }
 
@@ -70,6 +69,9 @@ public class AuthService {
             throw new RuntimeException("Tài khoản đang bị vô hiệu hóa");
         }
 
+        // Embed studentCode vào JWT để tách biệt với username
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), student.getStudentCode());
+        log.info("Login success for student: {} ({})", user.getUsername(), student.getStudentCode());
         return new LoginResponse(token, student.getStudentCode(), student.getFullName(), user.getRole().name());
     }
 

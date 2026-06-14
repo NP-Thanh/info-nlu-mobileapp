@@ -6,6 +6,7 @@ import '../providers/login_provider.dart';
 import '../../home/view/main_shell.dart';
 import '../../admin/view/admin_shell.dart';
 import '../../../core/services/push_notification_service.dart';
+import '../../student/providers/student_provider.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       return;
     }
+
+    // Invalidate để studentInfoProvider fetch lại sau khi token đã lưu chắc chắn
+    ref.invalidate(studentInfoProvider);
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainShell(role: 'STUDENT')),
