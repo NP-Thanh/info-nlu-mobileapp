@@ -44,14 +44,16 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
+    ApiClient.setLoggingOut(true);
     try {
       await PushNotificationService.unregisterOnLogout();
+      // Xóa token trước để onRequest không đính kèm token cũ vào các request sau
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
       await _dio.post('/auth/logout');
     } catch (_) {
       // Bỏ qua lỗi network
-    } finally {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
     }
+    // Không reset flag ở đây — để settings screen reset sau khi navigate xong
   }
 }

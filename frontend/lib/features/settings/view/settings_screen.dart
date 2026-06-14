@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/navigation/provider_scope_reset.dart';
+import '../../../core/network/api_client.dart';
 import '../../student/providers/student_provider.dart';
 import '../../auth/providers/login_provider.dart';
 import '../../auth/view/login_screen.dart';
@@ -44,6 +46,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (_) => false,
         );
+        // Reset scope sau khi navigate xong để tránh providers cũ gửi request
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          resetProviderScope();
+          ApiClient.setLoggingOut(false);
+        });
       }
     }
   }

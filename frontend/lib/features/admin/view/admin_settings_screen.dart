@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/navigation/provider_scope_reset.dart';
+import '../../../core/network/api_client.dart';
 import '../widgets/admin_widgets.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/view/change_password_screen.dart';
@@ -36,17 +38,18 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     setState(() => _loading = true);
     try {
       await AuthRepository().logout();
-    }
-    finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      resetProviderScope();
+      ApiClient.setLoggingOut(false);
+    });
   }
 
   @override

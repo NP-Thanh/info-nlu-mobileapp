@@ -1,5 +1,6 @@
 package com.example.nlu.config;
 
+import com.example.nlu.jwt.JwtAuthEntryPoint;
 import com.example.nlu.jwt.JwtAuthFilter;
 import com.example.nlu.jwt.StudentAccessFilter;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final StudentAccessFilter studentAccessFilter;
+    private final JwtAuthEntryPoint jwtAuthEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -34,6 +36,7 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(e -> e.authenticationEntryPoint(jwtAuthEntryPoint))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated()

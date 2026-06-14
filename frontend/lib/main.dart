@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/navigation/app_navigator.dart';
+import 'core/navigation/provider_scope_reset.dart';
 import 'core/services/push_notification_service.dart';
 import 'features/auth/view/login_screen.dart';
 import 'features/home/view/main_shell.dart';
@@ -11,7 +12,34 @@ import 'features/admin/view/admin_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PushNotificationService.initialize();
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(const _AppRoot());
+}
+
+class _AppRoot extends StatefulWidget {
+  const _AppRoot();
+
+  @override
+  State<_AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends State<_AppRoot> {
+  int _scopeKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    registerProviderScopeReset(() {
+      if (mounted) setState(() => _scopeKey++);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      key: ValueKey(_scopeKey),
+      child: const MyApp(),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
