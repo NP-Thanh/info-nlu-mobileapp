@@ -69,4 +69,9 @@ public class AuthController {
         }
         return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        return ResponseEntity.ok(Map.of("status", "ok"));
+    }
 }
