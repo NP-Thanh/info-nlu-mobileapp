@@ -6,9 +6,7 @@ import '../../features/auth/view/login_screen.dart';
 import '../navigation/provider_scope_reset.dart';
 
 class ApiClient {
-  // static const String baseUrl = 'http://10.0.2.2:8080/api'; //local
-  static const String baseUrl = 'http://10.0.130.116:8080/api'; //ktx
-  // static const String baseUrl = 'http://10.152.161.243:8080/api'; //nlu
+  static const String baseUrl = 'https://info-nlu-backend.onrender.com/api';
 
   static bool _isShowingSessionDialog = false;
   static bool _isLoggingOut = false;
@@ -19,8 +17,8 @@ class ApiClient {
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
       headers: {'Content-Type': 'application/json'},
     ),
   )..interceptors.add(
