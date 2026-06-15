@@ -4,11 +4,11 @@ import com.example.nlu.entity.Role;
 import com.example.nlu.entity.User;
 import com.example.nlu.repo.UserDeviceRepository;
 import com.example.nlu.repo.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +27,20 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
     private final TokenBlacklistService tokenBlacklistService;
     private final UserDeviceRepository userDeviceRepository;
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
+
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    @Value("${resend.from}")
+    private String resendFrom;
+
+    private final OkHttpClient httpClient = new OkHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -118,19 +126,32 @@ public class AdminUserService {
 
     private void sendWelcomeEmail(String email, String username, String password) {
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setTo(email);
-            msg.setSubject("[Thông tin NLUers] Tài khoản Admin của bạn");
-            msg.setText(
-                "Xin chào " + username + ",\n\n" +
-                "Tài khoản Admin của bạn đã được tạo trên hệ thống Thông tin NLUers.\n\n" +
-                "Tên đăng nhập: " + username + "\n" +
-                "Mật khẩu:      " + password + "\n\n" +
-                "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n" +
-                "Trân trọng,\nHệ thống Thông tin NLUers\nTrường Đại học Nông Lâm TP.HCM"
-            );
-            mailSender.send(msg);
-            log.info("Welcome email sent to admin: {}", email);
+            String body = objectMapper.writeValueAsString(Map.of(
+                "from", resendFrom,
+                "to", new String[]{email},
+                "subject", "[Thông tin NLUers] Tài khoản Admin của bạn",
+                "text",
+                    "Xin chào " + username + ",\n\n" +
+                    "Tài khoản Admin của bạn đã được tạo trên hệ thống Thông tin NLUers.\n\n" +
+                    "Tên đăng nhập: " + username + "\n" +
+                    "Mật khẩu:      " + password + "\n\n" +
+                    "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n" +
+                    "Trân trọng,\nHệ thống Thông tin NLUers\nTrường Đại học Nông Lâm TP.HCM"
+            ));
+
+            Request request = new Request.Builder()
+                .url("https://api.resend.com/emails")
+                .post(RequestBody.create(body, MediaType.parse("application/json")))
+                .addHeader("Authorization", "Bearer " + resendApiKey)
+                .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String res = response.body() != null ? response.body().string() : "";
+                    throw new RuntimeException("Resend error " + response.code() + ": " + res);
+                }
+                log.info("Welcome email sent to admin: {}", email);
+            }
         } catch (Exception e) {
             log.error("Failed to send welcome email to {}: {}", email, e.getMessage());
             throw new RuntimeException("Tạo tài khoản thành công nhưng không thể gửi email. Vui lòng kiểm tra lại địa chỉ email.");

@@ -6,7 +6,11 @@ import com.example.nlu.dto.response.AdminStudentDetailResponse;
 import com.example.nlu.dto.response.AdminStudentResponse;
 import com.example.nlu.entity.*;
 import com.example.nlu.repo.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +19,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminStudentService {
@@ -28,6 +34,14 @@ public class AdminStudentService {
     private final ProgramRepository programRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    @Value("${resend.from}")
+    private String resendFrom;
+
+    private final OkHttpClient httpClient = new OkHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public List<AdminStudentResponse> getStudents(String keyword,
@@ -130,6 +144,8 @@ public class AdminStudentService {
         sp.setStartYear(req.getStartYear());
         sp.setEndYear(req.getEndYear());
         studentProgramRepository.save(sp);
+
+        sendWelcomeEmail(req.getEmail(), req.getFullName(), req.getStudentCode());
 
         return toListResponse(student);
     }
@@ -331,5 +347,39 @@ public class AdminStudentService {
 
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    private void sendWelcomeEmail(String email, String fullName, String studentCode) {
+        try {
+            String body = objectMapper.writeValueAsString(Map.of(
+                "from", resendFrom,
+                "to", new String[]{email},
+                "subject", "[Thông tin NLUers] Tài khoản sinh viên của bạn",
+                "text",
+                    "Xin chào " + fullName + ",\n\n" +
+                    "Tài khoản sinh viên của bạn đã được tạo trên hệ thống Thông tin NLUers.\n\n" +
+                    "Tên đăng nhập: " + studentCode + "\n" +
+                    "Mật khẩu:      " + studentCode + "\n\n" +
+                    "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n" +
+                    "Trân trọng,\nHệ thống Thông tin NLUers\nTrường Đại học Nông Lâm TP.HCM"
+            ));
+
+            Request request = new Request.Builder()
+                .url("https://api.resend.com/emails")
+                .post(RequestBody.create(body, MediaType.parse("application/json")))
+                .addHeader("Authorization", "Bearer " + resendApiKey)
+                .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String res = response.body() != null ? response.body().string() : "";
+                    log.error("Resend error {}: {}", response.code(), res);
+                }
+                log.info("Welcome email sent to student: {}", email);
+            }
+        } catch (Exception e) {
+            // Không throw — tạo SV thành công dù mail lỗi
+            log.error("Failed to send welcome email to {}: {}", email, e.getMessage());
+        }
     }
 }
