@@ -4,10 +4,11 @@ import com.example.nlu.entity.Student;
 import com.example.nlu.entity.User;
 import com.example.nlu.repo.StudentRepository;
 import com.example.nlu.repo.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import okhttp3.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -25,7 +27,15 @@ public class PasswordResetService {
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    @Value("${resend.from}")
+    private String resendFrom;
+
+    private final OkHttpClient httpClient = new OkHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int PASSWORD_LENGTH = 10;
@@ -77,19 +87,32 @@ public class PasswordResetService {
 
     private void sendResetEmail(String email, String fullName, String studentCode, String newPassword) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("[Thông tin NLUers] Mật khẩu mới của bạn");
-            message.setText(
-                "Xin chào " + fullName + ",\n\n" +
-                "Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n" +
-                "Mã số sinh viên: " + studentCode + "\n" +
-                "Mật khẩu mới: " + newPassword + "\n\n" +
-                "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n" +
-                "Trân trọng,\nHệ thống Thông tin NLUers\nTrường Đại học Nông Lâm TP.HCM"
-            );
-            mailSender.send(message);
-            log.info("Password reset email sent to: {}", email);
+            String body = objectMapper.writeValueAsString(Map.of(
+                "from", resendFrom,
+                "to", new String[]{email},
+                "subject", "[Thông tin NLUers] Mật khẩu mới của bạn",
+                "text",
+                    "Xin chào " + fullName + ",\n\n" +
+                    "Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n" +
+                    "Mã số sinh viên: " + studentCode + "\n" +
+                    "Mật khẩu mới: " + newPassword + "\n\n" +
+                    "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n" +
+                    "Trân trọng,\nHệ thống Thông tin NLUers\nTrường Đại học Nông Lâm TP.HCM"
+            ));
+
+            Request request = new Request.Builder()
+                .url("https://api.resend.com/emails")
+                .post(RequestBody.create(body, MediaType.parse("application/json")))
+                .addHeader("Authorization", "Bearer " + resendApiKey)
+                .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String res = response.body() != null ? response.body().string() : "";
+                    throw new RuntimeException("Resend error " + response.code() + ": " + res);
+                }
+                log.info("Password reset email sent to: {}", email);
+            }
         } catch (Exception e) {
             log.error("Failed to send email to {}: {}", email, e.getMessage());
             throw new RuntimeException("Không thể gửi email, vui lòng thử lại sau");
