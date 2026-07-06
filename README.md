@@ -36,6 +36,11 @@
 
 ---
 
+## Demo
+**Student Account:**
+- Username: 22130259.
+- Password: 22130259.
+
 ## Chạy dự án (Development)
 
 ### Backend
